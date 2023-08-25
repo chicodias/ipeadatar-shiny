@@ -1,0 +1,53 @@
+---
+title: "Análise de dados do Ipeadata"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introdução
+
+Esta análise utiliza dados do Ipeadata para analisar a taxa de inflação no Brasil.
+
+## Instalação e Carregamento de Pacotes
+
+```{r}
+#install.packages("ipeadatar")
+library(ipeadatar)
+```
+
+## Consulta aos Metadados
+
+Vamos consultar os metadados para encontrar a série que desejamos analisar.
+
+## Obtendo a Série de Dados
+
+Agora vamos obter os dados da taxa de inflação (IPCA).
+
+```{r}
+inflacao <- ipeadata("PRECOS12_IPCA12")
+```
+
+## Análise dos Dados
+
+### Gráfico da Taxa de Inflação
+
+```{r}
+library(ggplot2)
+
+ggplot(inflacao, aes(x = date, y = value, color = code)) +
+  geom_line() +
+  labs(title = "Taxa de Inflação (IPCA) ao Longo do Tempo",
+       x = "Data",
+       y = "Taxa de Inflação")
+```
+
+## Exportando os Resultados
+
+Vamos exportar os dados para um arquivo CSV.
+
+```{r}
+#write.csv(inflacao, "inflacao.csv")
+```
