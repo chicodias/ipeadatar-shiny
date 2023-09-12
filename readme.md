@@ -10,9 +10,12 @@ Este projeto oferece uma plataforma interativa para explorar várias séries dis
 
 ## Exemplo
 
-Aqui está um exemplo do que você pode alcançar com esta aplicação:
+Um deploy está disponível em [https://chicodias.shinyapps.io/SeriesTemporais/](https://chicodias.shinyapps.io/SeriesTemporais/).
+Aqui está um exemplo da tela inicial da aplicação:
 
 ![Gráfico de Exemplo](example.jpeg)
+
+Mais funcionalidades serão adicionadas no decorrer deste semestre.
 
 ## Como Utilizar
 
@@ -26,4 +29,4 @@ Este projeto é de código aberto e está disponível sob a Licença MIT. Veja o
 
 ## Contato
 
-Para perguntas, sugestões ou colaborações, entre em contato com [Seu Nome ou Email].
+Para perguntas, sugestões ou colaborações, fique a vontade para incluir uma issue ou pull request.
