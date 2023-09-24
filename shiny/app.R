@@ -5,14 +5,17 @@ library(ggplot2)
 
 # Retrieve data
 datasets <- ipeadatar::available_series("br")
+subject <- ipeadatar::available_subjects(language = c("en","br"))
 
 # UI (User Interface)
 ui <- fluidPage(
   titlePanel("Explore Ipeadata Series"),
   sidebarLayout(
     sidebarPanel(
-      selectInput("series", "Choose a Series:", datasets$code)
-    ),
+      selectInput("series", "Choose a Series:", datasets$code), 
+      helpText("Aqui você pode escolher entre as bases disponíveis no IPEA")
+    ), 
+    
     mainPanel(
       plotOutput("seriesPlot")
     )
