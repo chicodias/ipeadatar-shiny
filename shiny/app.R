@@ -1,30 +1,41 @@
 # Load necessary libraries
 library(shiny)
 library(ipeadatar)
-library(ggplot2)
-library(dplyr)
+library(tidyverse)
+library(plotly)
+library(shinybusy)
 
 # Retrieve data
 datasets <- ipeadatar::available_series("br")
-subject <- ipeadatar::available_subjects(language = c("en","br"))
+#subject <- ipeadatar::available_subjects(language = c("en","br"))
 
 # UI (User Interface)
 ui <- fluidPage(
-  titlePanel("Explore Ipeadata Series"),
-  sidebarLayout(
-    sidebarPanel(
-      textOutput("nameDisplay"),
-      selectInput("series", "Choose a Series:", ""),
-      selectInput("theme", "Theme", choices = unique(datasets$theme)),
-      selectInput("source", "Source", choices = unique(datasets$source), multiple = TRUE),
-      selectInput("freq", "Frequency", choices = unique(datasets$freq)),
-      radioButtons("status", "Status", choices = c("Active" = "active", "Inactive" = "inactive")),
-      helpText("Aqui você pode escolher entre as bases disponíveis no IPEA")),
-
-    mainPanel(
-      plotOutput("seriesPlot")
-    )
-  )
+  add_busy_bar(),
+  navbarPage(
+             "Ipeadata Explorer",
+             tabPanel("Dashboard",
+                      sidebarLayout(
+                        sidebarPanel(
+                          helpText("Aqui você pode escolher entre as bases disponíveis no pacote IpeaDataR"),
+                          tableOutput("nameDisplay"),
+                          selectizeInput("code", "Escolha a(s) série(s):", unique(datasets$code), multiple = TRUE),
+                          selectizeInput("freq", "Frequência", choices = unique(datasets$freq), selected = unique(datasets$freq)),
+                          selectizeInput("theme", "Tema", choices = unique(datasets$theme), selected = unique(datasets$theme), multiple = TRUE),
+                          selectizeInput("source", "Fonte", choices = unique(datasets$source), selected = unique(datasets$theme), multiple = TRUE),
+                          selectizeInput("status", "Status", choices = c("Ativa", "Inativa"), selected = c("Ativa", "Inativa")),
+                          ),
+                        mainPanel(
+                          plotlyOutput("seriesPlot")
+                        )
+                      )
+                      ),
+             tabPanel("Explorador",
+                      mainPanel(
+                        dataTableOutput("dataTab"),
+                        )
+                      )
+             )
 )
 
 # Server logic
@@ -33,41 +44,58 @@ server <- function(input, output, session) {
 ## Temas <- unique(datasets$theme)
   ## Source <- unique(datasets$source)
   ## Frequencia <- unique(datasets$freq)
+  output$dataTab <- renderDataTable({
+    datasets  |>
+      rename(
+        `Código` = code,
+        `Nome` = name,
+        `Fonte` = source,
+        `Última atualização` = lastupdate,
+        `Tema` = theme,
+        `Frequência` = freq,
+        `Status` = status
+        )
+  })
 
-  output$nameDisplay <- renderText({
+  output$nameDisplay <- renderTable({
     # Example: Display series code as name
     # You should replace this with actual logic to get the 'name' variable.
-    input$series
+    req(input$code)
+    datasets |> filter(code %in% input$code) |> select(code, name, source, lastupdate) |>
+      mutate_if(is.Date,~format(.,"%d-%m-%Y"))  |>
+      rename(
+          `Código` = code,
+          `Nome` = name,
+          `Fonte` = source,
+          `Última atualização` = lastupdate
+        )
   })
 
   selected_series <- reactive({
-    series_data <- datasets %>%
-      filter(
-        code == input$series
-      )
-    if(nrow(series_data) > 0) ipeadatar::ipeadata(series_data$code) else NULL
+    req(input$code)
+    ipeadatar::ipeadata(input$code)
   })
 
-  observe({
-    codigos <- datasets %>% 
-      filter(
-        theme %in% input$theme,
-        ##source %in% input$source,
-        freq == input$freq,
-        status == input$status
-      ) 
-    updateSelectInput(session, "series", choices = codigos$code)
-    
-  })
-  
-  output$seriesPlot <- renderPlot({
+  ## observe({
+  ##     req(input$theme, input$source, input$freq, input$status)
+  ##   codigos <- datasets %>%
+  ##     filter(
+  ##       theme %in% input$theme,
+  ##       source %in% input$source,
+  ##       freq %in% input$freq,
+  ##       status %in% input$status
+  ##     ) |> select(code)
+  ##     updateSelectizeInput(session, "code", choices = codigos)
+  ## })
+
+  output$seriesPlot <- renderPlotly({
     if(is.null(selected_series())) return(NULL)
-    ggplot(selected_series(), aes(x = date, y = value, color = tcode)) +
-      geom_line() +
-      labs(
-        title = paste("Series:", input$series),
-        x = "Data",
-        y = "Value"
+
+    plot_ly(data = selected_series(), x = ~date, y = ~value, color = ~code, type = 'scatter', mode = 'lines') %>%
+      layout(
+        #title = paste("Series:", selected_series() |> select(code) |> distinct()),
+        xaxis = list(title = "Data"),
+        yaxis = list(title = "Valor")
       )
   })
 }
