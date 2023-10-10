@@ -26,7 +26,8 @@ ui <- fluidPage(
                           selectizeInput("status", "Status", choices = c("Ativa", "Inativa"), selected = c("Ativa", "Inativa")),
                           ),
                         mainPanel(
-                          plotlyOutput("seriesPlot")
+                          plotlyOutput("seriesPlot"),
+                          downloadButton("downloadData", "Baixar CSV")
                         )
                       )
                       ),
@@ -40,6 +41,15 @@ ui <- fluidPage(
 
 # Server logic
 server <- function(input, output, session) {
+
+  output$downloadData <- downloadHandler(
+    filename = function() {
+      paste("selected_series_", Sys.Date(), ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(selected_series(), file, row.names = FALSE)
+    }
+  )
 
 ## Temas <- unique(datasets$theme)
   ## Source <- unique(datasets$source)
