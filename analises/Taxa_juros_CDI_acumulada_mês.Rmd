@@ -1,0 +1,73 @@
+---
+title: "Análise de dados do CDI"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries}
+library(fpp3)
+library(ipeadatar)
+library(ggplot2)
+```
+
+## Taxa de juros - CDI / Over - acumulada no mês
+
+```{r ts_data}
+ts <- ipeadata("BM12_TJCDI12") %>% 
+  mutate(date = yearmonth(date)) %>%
+  as_tsibble(index = date)
+```
+
+### Time plot
+
+```{r time_plot}
+ts %>% 
+  autoplot()
+```
+
+### Seasonal plot
+
+Analisando o gráfico de sazonalidade, notamos uma crescente durante os meses, com picos em dezembro, apesar de discrepâncias acontecerem em determinados anos, principalmente em anos antes de 1995 e valores recentes muito mais baixos.
+
+```{r seasonal_plot}
+ts %>% 
+  gg_season(value, labels = "both")
+```
+
+### Sub series plot
+
+```{r sub_series_plot}
+ts %>% 
+  gg_subseries(value)
+```
+
+### STL decomposition (para extrair Tendência)
+
+Dessa forma, podemos analisar somente a tendência da série ou podemos remover a sazonalidade da série para obter a série “sazonalmente ajustada”, dentre outras análises possíveis.
+
+```{r stl_decomposition}
+ts %>% 
+  model(STL(value)) %>%
+  components() %>%
+  autoplot()
+```
+
+### ACF plot
+
+Temos um pico de autocorrelação no início que segue decrescendo.
+
+```{r acf_plot}
+ts %>% 
+  ACF(value, lag_max = 50) %>%
+  autoplot()
+```
+
+### Lag plot
+
+```{r lag_plot}
+ts %>% 
+  gg_lag(value, geom = "point", period = "year")
+```

@@ -1,0 +1,240 @@
+---
+title: "Análise de dados do IGP-M"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries}
+library(fpp3)
+library(ipeadatar)
+library(ggplot2)
+```
+
+## Séries
+
+O Índice Geral de Preços - Mercado (IGP-M) é a média aritmética ponderada de três índices de preços: IPA, IPC e INCC, e revela as fontes de pressão inflacionária e a evolução dos preços de produtos e serviços mais relevantes para produtor, consumidor e construção civil.
+
+### 1. IGP-M geral
+
+```{r igpm_geral}
+IGPM_geral <- ipeadata("IGP12_IGPM12") %>% 
+  mutate(date = yearmonth(date)) %>%
+  as_tsibble(index = date)
+```
+
+#### Time plot
+
+```{r}
+IGPM_geral %>% 
+  autoplot() +
+  labs(title = "Índice Geral de Preços – Mercado (IGP-M) geral",
+       x = "Ano/Mês",
+       y = "Valor")
+```
+
+#### Seasonal plot
+
+É difícil por esse gráfico notar alguma sazonalidade, porém notamos que conforme os anos passam a tendência é um aumento dos valores, sendo mais explícito em anos recentes.
+
+```{r}
+IGPM_geral %>% 
+  gg_season(value, labels = "both") +
+  labs(title = "Índice Geral de Preços – Mercado (IGP-M) geral",
+       x = "Tempo (ano/mês)",
+       y = "")
+```
+
+#### Sub series plot
+
+Os gráficos apresentam aumento conforme os anos sem grande diferença entre os meses, como era de se esperar pelo gráfico passado.
+
+```{r}
+IGPM_geral %>% 
+  gg_subseries(value) +
+  labs(title = "Índice Geral de Preços – Mercado (IGP-M) geral",
+       x = "Tempo (em anos)",
+       y = "IGP-M")
+```
+
+#### STL decomposition (para extrair Tendência)
+
+```{r}
+IGPM_geral %>% 
+  model(STL(value)) %>%
+  components() %>%
+  autoplot()
+```
+
+#### ACF plot
+
+O gráfico apresenta uma queda da autocorrelação conforme o LAG.
+
+```{r}
+IGPM_geral %>% 
+  ACF(value, lag_max = 100) %>%
+  autoplot() + 
+  labs(title = "Índice Geral de Preços – Mercado (IGP-M) geral",
+       x = "Lag",
+       y = "ACF")
+```
+
+#### Lag plot
+
+```{r}
+IGPM_geral %>% 
+  gg_lag(value, geom = "point", period = "year") + 
+  labs(title = "Índice Geral de Preços – Mercado (IGP-M) geral",
+       x = "Lag",
+       y = "IGP-M",
+       colour = "Mês")
+```
+
+### 2. IGP-M mensal
+
+```{r igpm_mensal}
+IGPM_mensal <- ipeadata("IGP12_IGPMG12") %>% 
+  mutate(date = yearmonth(date)) %>%
+  as_tsibble(index = date)
+```
+
+#### Time plot
+
+Valores muito altos em anos iniciais que abaixam em anos mais recentes.
+
+```{r}
+IGPM_mensal %>% 
+  autoplot() +
+  labs(title = "Índice Geral de Preços – Mercado (IGP-M) mensal",
+       x = "Tempo (ano/mês)",
+       y = "Valor")
+```
+
+#### Seasonal plot
+
+```{r}
+IGPM_mensal %>% 
+  gg_season(value, labels = "both") +
+  labs(title = "Índice Geral de Preços – Mercado (IGP-M) mensal",
+       x = "Tempo (em meses)",
+       y = "")
+```
+
+#### Sub series plot
+
+Os meses de janeiro, fevereiro e março se destacam por uma alta principalmente nos anos iniciais.
+
+```{r}
+IGPM_mensal %>% 
+  gg_subseries(value) +
+  labs(title = "Índice Geral de Preços – Mercado (IGP-M) mensal",
+       x = "Tempo (em anos)",
+       y = "IGP-M")
+```
+
+#### STL decomposition (para extrair Tendência)
+
+Nota-se que a tendência tinha valores mais altos até 1995.
+
+```{r}
+IGPM_mensal %>% 
+  model(STL(value)) %>%
+  components() %>%
+  autoplot()
+```
+
+#### ACF plot
+
+```{r}
+IGPM_mensal %>% 
+  ACF(value, lag_max = 100) %>%
+  autoplot() + 
+  labs(title = "Índice Geral de Preços – Mercado (IGP-M) mensal",
+       x = "Lag",
+       y = "ACF")
+```
+
+#### Lag plot
+
+```{r}
+IGPM_mensal %>% 
+  gg_lag(value, geom = "point", period = "year") + 
+  labs(title = "Índice Geral de Preços – Mercado (IGP-M) mensal",
+       x = "Lag",
+       y = "IGP-M",
+       colour = "Mês")
+```
+
+### 3. IGP-M 1º decêndio
+
+```{r igpm_1d}
+IGPM_1D <- ipeadata("IGP12_IGPMG1D12") %>% 
+  mutate(date = yearmonth(date)) %>%
+  as_tsibble(index = date)
+```
+
+#### Time plot
+
+```{r}
+IGPM_1D %>% 
+  autoplot() +
+  labs(title = "Índice Geral de Preços – Mercado (IGP-M) 1º Decêndio",
+       x = "Tempo (ano/mês)",
+       y = "Valor")
+```
+
+#### Seasonal plot
+
+```{r}
+IGPM_1D %>% 
+  gg_season(value, labels = "both") +
+  labs(title = "Índice Geral de Preços – Mercado (IGP-M) 1º Decêndio",
+       x = "Tempo (em meses)",
+       y = "")
+```
+
+#### Sub series plot
+
+```{r}
+IGPM_1D %>% 
+  gg_subseries(value) +
+  labs(title = "Índice Geral de Preços – Mercado (IGP-M) 1º Decêndio",
+       x = "Tempo (em anos
+
+)",
+       y = "IGP-M")
+```
+
+#### STL decomposition (para extrair Tendência)
+
+```{r}
+IGPM_1D %>% 
+  model(STL(value)) %>%
+  components() %>%
+  autoplot()
+```
+
+#### ACF plot
+
+```{r}
+IGPM_1D %>% 
+  ACF(value, lag_max = 100) %>%
+  autoplot() + 
+  labs(title = "Índice Geral de Preços – Mercado (IGP-M) 1º Decêndio",
+       x = "Lag",
+       y = "ACF")
+```
+
+#### Lag plot
+
+```{r}
+IGPM_1D %>% 
+  gg_lag(value, geom = "point", period = "year") + 
+  labs(title = "Índice Geral de Preços – Mercado (IGP-M) 1º Decêndio",
+       x = "Lag",
+       y = "IGP-M",
+       colour = "Mês")
+```
+
