@@ -30,6 +30,7 @@ ui <- fluidPage(
                         mainPanel(
                           plotlyOutput("seriesPlot"),
                           plotOutput("corrPlot"),
+                          plotOutput("seasonalPlot"),
                           downloadButton("downloadData", "Baixar CSV")
                         )
                       )
@@ -133,6 +134,16 @@ server <- function(input, output, session) {
       as_tsibble(index=date) %>%
       ACF(value, lag_max=50) %>%
       autoplot()
+
+  })
+
+  output$seasonalPlot <- renderPlot({
+    if(is.null(selected_series())) return(NULL)
+
+    selected_series() %>%
+      mutate(date = yearmonth(date)) %>%
+      as_tsibble(index=date) %>%
+      gg_season(value, labels = "both")
 
   })
 
