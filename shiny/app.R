@@ -30,8 +30,9 @@ ui <- fluidPage(
                         mainPanel(
                           plotlyOutput("seriesPlot"),
                           plotOutput("seasonalPlot"),
-                          plotOutpu("subseriesPlot"),
+                          plotOutput("subseriesPlot"),
                           plotOutput("corrPlot"),
+                          plotOutput("lagPlot"),
                           downloadButton("downloadData", "Baixar CSV")
                         )
                       )
@@ -155,6 +156,16 @@ server <- function(input, output, session) {
       mutate(date = yearmonth(date)) %>%
       as_tsibble(index=date) %>%
       gg_subseries(value)
+
+  })
+
+  output$lagPlot <- renderPlot({
+    if(is.null(selected_series())) return(NULL)
+
+    selected_series() %>%
+      mutate(date = yearmonth(date)) %>%
+      as_tsibble(index=date) %>%
+      gg_lag(value, geom = "point", period = "year")
 
   })
 
