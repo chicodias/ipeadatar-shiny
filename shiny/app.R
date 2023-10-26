@@ -4,6 +4,8 @@ library(ipeadatar)
 library(tidyverse)
 library(plotly)
 library(shinybusy)
+library(fpp3)
+
 
 # Retrieve data
 datasets <- ipeadatar::available_series("br")
@@ -27,6 +29,7 @@ ui <- fluidPage(
                           ),
                         mainPanel(
                           plotlyOutput("seriesPlot"),
+                          plotOutput("corrPlot"),
                           downloadButton("downloadData", "Baixar CSV")
                         )
                       )
@@ -108,6 +111,31 @@ server <- function(input, output, session) {
         yaxis = list(title = "Valor")
       )
   })
+
+  # ## escala log
+  # output$seriesPlot <- renderPlotly({
+  #   if(is.null(selected_series())) return(NULL)
+
+  #   plot_ly(data = selected_series(), x = ~date, y = ~value, color = ~code, type = 'scatter', mode = 'lines') %>%
+  #     layout(
+  #       #title = paste("Series:", selected_series() |> select(code) |> distinct()),
+  #       xaxis = list(title = "Data"),
+  #       yaxis = list(title = "Valor")
+  #     )
+  # })
+
+  ## Correlograma
+  output$corrPlot <- renderPlot({
+    if(is.null(selected_series())) return(NULL)
+
+    selected_series() %>%
+      mutate(date = yearmonth(date)) %>%
+      as_tsibble(index=date) %>%
+      ACF(value, lag_max=50) %>%
+      autoplot()
+
+  })
+
 }
 
 # Run the Shiny app
