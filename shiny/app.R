@@ -29,8 +29,9 @@ ui <- fluidPage(
                           ),
                         mainPanel(
                           plotlyOutput("seriesPlot"),
-                          plotOutput("corrPlot"),
                           plotOutput("seasonalPlot"),
+                          plotOutpu("subseriesPlot"),
+                          plotOutput("corrPlot"),
                           downloadButton("downloadData", "Baixar CSV")
                         )
                       )
@@ -144,6 +145,16 @@ server <- function(input, output, session) {
       mutate(date = yearmonth(date)) %>%
       as_tsibble(index=date) %>%
       gg_season(value, labels = "both")
+
+  })
+
+  output$subseriesPlot <- renderPlot({
+    if(is.null(selected_series())) return(NULL)
+
+    selected_series() %>%
+      mutate(date = yearmonth(date)) %>%
+      as_tsibble(index=date) %>%
+      gg_subseries(value)
 
   })
 
