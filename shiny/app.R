@@ -5,7 +5,7 @@ library(tidyverse)
 library(plotly)
 library(shinybusy)
 library(fpp3)
-
+library(shinyWidgets)
 
 # Retrieve data
 datasets <- ipeadatar::available_series("br")
@@ -13,7 +13,6 @@ datasets <- ipeadatar::available_series("br")
 
 # UI (User Interface)
 ui <- fluidPage(
-  add_busy_bar(),
   navbarPage(
              "Ipeadata Explorer",
              tabPanel("Dashboard",
@@ -21,19 +20,20 @@ ui <- fluidPage(
                         sidebarPanel(
                           helpText("Aqui você pode escolher entre as bases disponíveis no pacote IpeaDataR"),
                           tableOutput("nameDisplay"),
-                          selectizeInput("code", "Escolha a(s) série(s):", unique(datasets$code), multiple = TRUE),
-                          selectizeInput("freq", "Frequência", choices = unique(datasets$freq), selected = unique(datasets$freq)),
-                          selectizeInput("theme", "Tema", choices = unique(datasets$theme), selected = unique(datasets$theme), multiple = TRUE),
-                          selectizeInput("source", "Fonte", choices = unique(datasets$source), selected = unique(datasets$theme), multiple = TRUE),
-                          selectizeInput("status", "Status", choices = c("Ativa", "Inativa"), selected = c("Ativa", "Inativa")),
+                          selectizeInput("code", "Escolha a(s) série(s):", choices = unique(datasets$code), multiple = TRUE),
+                          pickerInput("freq", "Frequência", choices = unique(datasets$freq), selected = unique(datasets$freq), options = list(`actions-box` = TRUE), multiple = TRUE),
+                          pickerInput("theme", "Tema", choices = unique(datasets$theme), selected = unique(datasets$theme), multiple = TRUE),
+                          pickerInput("source", "Fonte", choices = unique(datasets$source), selected = unique(datasets$source), multiple = TRUE, options = list(`actions-box` = TRUE)),
+                          pickerInput("status", "Status", choices = c("Ativa", "Inativa"), selected = c("Ativa", "Inativa"), multiple = TRUE),
+                          downloadButton("downloadData", "Baixar CSV")
                           ),
                         mainPanel(
+                          add_busy_bar(),
                           plotlyOutput("seriesPlot"),
                           plotOutput("seasonalPlot"),
                           plotOutput("subseriesPlot"),
                           plotOutput("corrPlot"),
                           plotOutput("lagPlot"),
-                          downloadButton("downloadData", "Baixar CSV")
                         )
                       )
                       ),
@@ -48,20 +48,34 @@ ui <- fluidPage(
 # Server logic
 server <- function(input, output, session) {
 
-  output$downloadData <- downloadHandler(
-    filename = function() {
-      paste("selected_series_", Sys.Date(), ".csv", sep = "")
-    },
-    content = function(file) {
-      write.csv(selected_series(), file, row.names = FALSE)
-    }
-  )
+  # Objeto dinâmico que armazena as séries exibidas
+  selected_series <- reactive({
 
-## Temas <- unique(datasets$theme)
-  ## Source <- unique(datasets$source)
-  ## Frequencia <- unique(datasets$freq)
+    req(input$code)
+    ipeadatar::ipeadata(input$code, quiet = T)
+  })
+
+  # Armazena as séries que o usuário filtrou
+  current_datasets <- reactive({
+    req(input$code)
+      datasets |> filter(code %in% input$code)
+  })
+
+  filtered_series <- reactive({
+
+  })
+
+  # Armazena as séries em forma de ts
+  selected_series_ts <- reactive({
+    selected_series() %>%
+#      mutate(date = yearmonth(date)) %>%
+        as_tsibble(index=date, key = code)
+  })
+
+  ## Tabela com os datasets
+  ## TODO: coluna "Adicionar ao gráfico"
   output$dataTab <- renderDataTable({
-    datasets  |>
+    current_datasets()  |>
       rename(
         `Código` = code,
         `Nome` = name,
@@ -73,9 +87,19 @@ server <- function(input, output, session) {
         )
   })
 
+
+  ## Baixa um csv com as séries selecionadas
+  ## FIXME: retorno quando selected_series() é NULL
+  output$downloadData <- downloadHandler(
+    filename = function() {
+      paste("selected_series_", Sys.Date(), ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(selected_series(), file, row.names = FALSE)
+    }
+  )
+  ## Tabela da sidebar que exibe as séries selecionadas pelo usuário
   output$nameDisplay <- renderTable({
-    # Example: Display series code as name
-    # You should replace this with actual logic to get the 'name' variable.
     req(input$code)
     datasets |> filter(code %in% input$code) |> select(code, name, source, lastupdate) |>
       mutate_if(is.Date,~format(.,"%d-%m-%Y"))  |>
@@ -85,25 +109,28 @@ server <- function(input, output, session) {
           `Fonte` = source,
           `Última atualização` = lastupdate
         )
+
   })
 
-  selected_series <- reactive({
-    req(input$code)
-    ipeadatar::ipeadata(input$code)
+
+  # armazena as séries disponiveis
+  series_info <- reactive({
+      req(input$theme, input$source, input$freq, input$status)
+
+  opts <- datasets %>%
+      filter(
+        theme %in% input$theme,
+        source %in% input$source,
+        freq %in% input$freq,
+        status %in% input$status
+      ) |>
+      select(code)
+
+      updateSelectizeInput(session = session, inputId = "code", choices = opts, server = TRUE)
   })
 
-  ## observe({
-  ##     req(input$theme, input$source, input$freq, input$status)
-  ##   codigos <- datasets %>%
-  ##     filter(
-  ##       theme %in% input$theme,
-  ##       source %in% input$source,
-  ##       freq %in% input$freq,
-  ##       status %in% input$status
-  ##     ) |> select(code)
-  ##     updateSelectizeInput(session, "code", choices = codigos)
-  ## })
 
+  ## Grafico interativo com as séries selecionadas pelo usuário
   output$seriesPlot <- renderPlotly({
     if(is.null(selected_series())) return(NULL)
 
@@ -168,6 +195,8 @@ server <- function(input, output, session) {
       gg_lag(value, geom = "point", period = "year")
 
   })
+
+
 
 }
 
