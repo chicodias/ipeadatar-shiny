@@ -39,8 +39,10 @@ ui <- fluidPage(
                       sidebarLayout(
                         sidebarPanel(
                           tableOutput("nameDisplay"),
-                          helpText("Aqui você pode escolher entre as bases disponíveis no pacote IpeaDataR"),
-                          sliderInput("lambda", "Selecione lambda de box-cox", min= -2, max = 2, step = 0.5, value = 1),
+                          h1("Parâmetros"),
+                          helpText("Aqui você pode escolher diferentes parâmetros para as análises"),
+                          sliderInput("lagMax", "Selecione lagmax do correlograma", min= 0, max = 100, step = 10, value = 50),
+                          sliderInput("lambda", "Selecione lambda de box-cox", min= -2, max = 2, step = 0.01, value = 1),
                           checkboxInput("bestLambda", "Use lambda ótimo")
                           ),
                       mainPanel(
@@ -109,6 +111,7 @@ server <- function(input, output, session) {
         mutate(value = box_cox(value, input$lambda))
     }
   })
+
 
   # infos da série selecionada
   series_data <- reactive({
@@ -259,11 +262,11 @@ server <- function(input, output, session) {
   ## Correlograma
   output$corrPlot <- renderPlotly({
     if(is.null(selected_series())) return(NULL)
-    selected_series_ts() %>%
-      ACF(value, lag_max=10) %>%
+
+    selected_series_ts() |>
+      ACF(value, lag_max=input$lagMax) |>
       autoplot()  |>
       ggplotly()
-
 
   })
 
