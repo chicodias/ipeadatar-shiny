@@ -38,9 +38,10 @@ ui <- fluidPage(
              tabPanel("Modelagem",
                       sidebarLayout(
                         sidebarPanel(
-                          tableOutput("nameDisplay"),
-                          helpText("Aqui você pode escolher entre as bases disponíveis no pacote IpeaDataR"),
-                          sliderInput("lambda", "Selecione lambda de box-cox", min= -2, max = 2, step = 0.5, value = 1)
+                            tableOutput("nameDisplay"),
+                            helpText("Aqui você pode escolher entre as bases disponíveis no pacote IpeaDataR"),
+                            sliderInput("lambda", "Selecione lambda de box-cox", min= -2, max = 2, step = 0.5, value = 1),
+                            sliderInput("lagMax", "Selecione lagmax de box-cox", min= 0, max = 100, step = 10, value = 50),
                           ),
                       mainPanel(
                         add_busy_spinner(spin = "fading-circle"),
@@ -71,13 +72,11 @@ server <- function(input, output, session) {
 
   })
 
-  eventReactive(input$lambda, {
-    selected_series <- {
-      req(input$code)
-      dados <- ipeadatar::ipeadata(input$code, quiet = T) |>
-        mutate(value = box_cox(value, input$lambda))
-    }
-  })
+  # observeEvent(input$lambda, {
+  #   selected_series()
+    
+  
+  # })
 
   # infos da série selecionada
   series_data <- reactive({
@@ -209,7 +208,7 @@ server <- function(input, output, session) {
     selected_series() %>%
       mutate(date = yearmonth(date)) %>%
       as_tsibble(index=date) %>%
-      ACF(value, lag_max=50) %>%
+      ACF(value, lag_max=input$lagMax) %>%
       autoplot()  |>
       ggplotly()
 
