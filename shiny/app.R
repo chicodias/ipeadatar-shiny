@@ -9,7 +9,9 @@ library(shinyWidgets)
 library(DT)
 
 # Retrieve data
-datasets <- ipeadatar::available_series("br")
+#write_csv(ipeadatar::available_series("br"), "datasets.csv")
+
+datasets <- read_csv("datasets.csv")
 #subject <- ipeadatar::available_subjects(language = c("en","br"))
 
 # UI (User Interface)
@@ -42,11 +44,12 @@ ui <- fluidPage(
                           ),
                       mainPanel(
                           add_busy_spinner(spin = "fading-circle"),
-                          plotlyOutput("seriesPlot"),
-                          plotOutput("seasonalPlot"),
-                          plotOutput("subseriesPlot"),
-                          plotOutput("corrPlot"),
-                          plotOutput("lagPlot"),
+                        plotlyOutput("seriesPlot"),
+                        plotlyOutput("corrPlot"),
+#                        plotlyOutput("stlPlot"),
+                        plotlyOutput("seasonalPlot"),
+                        plotlyOutput("subseriesPlot"),
+                        plotlyOutput("lagPlot"),
                         )
                       )
                       )
@@ -97,9 +100,10 @@ server <- function(input, output, session) {
 
   # Armazena as séries em forma de ts
   selected_series_ts <- reactive({
-    selected_series() %>%
+    selected_series() |>
+      select(!c("uname", "tcode")) |>
 #      mutate(date = yearmonth(date)) %>%
-        as_tsibble(index=date, key = code)
+        as_tsibble(index=date)
   })
 
   ## Tooltip com o numero de séries que atendam aos filtros
@@ -124,9 +128,8 @@ server <- function(input, output, session) {
         )
   }, selection = 'single')
 
-
+  ## Observador que inclui uma célula da tabela no input de código da série
   observeEvent(input$dataTab_row_last_clicked, {
-
     rowNum <- input$dataTab_row_last_clicked
     if(is.null(rowNum)) return(NULL)
     selectedCode <- series_info() |> slice(rowNum) |> pull(code) |> as.character()
@@ -150,7 +153,7 @@ server <- function(input, output, session) {
   ## Tabela da sidebar que exibe as séries selecionadas pelo usuário
   output$nameDisplay <- renderTable({
     req(input$code)
-    datasets |> filter(code %in% input$code) |> select(code, name, source, lastupdate) |>
+    series_data() |> select(code, name, source, lastupdate) |>
       mutate_if(is.Date,~format(.,"%d-%m-%Y"))  |>
       rename(
           `Código` = code,
@@ -173,58 +176,67 @@ server <- function(input, output, session) {
       )
   })
 
-  # ## escala log
-  # output$seriesPlot <- renderPlotly({
-  #   if(is.null(selected_series())) return(NULL)
+  ## Decomp STL da série de acordo com janela e parametros
+  output$stlPlot <- renderPlotly({
 
-  #   plot_ly(data = selected_series(), x = ~date, y = ~value, color = ~code, type = 'scatter', mode = 'lines') %>%
-  #     layout(
-  #       #title = paste("Series:", selected_series() |> select(code) |> distinct()),
-  #       xaxis = list(title = "Data"),
-  #       yaxis = list(title = "Valor")
-  #     )
-  # })
+    selected_series_ts() |>
+    model(
+      STL(value ~ trend(window = 7) +
+            season(window = "periodic"),
+          robust = TRUE)) |>
+      components() |>
+      autoplot() |>
+      ggplotly()
 
+  })
+  
   ## Correlograma
-  output$corrPlot <- renderPlot({
+  output$corrPlot <- renderPlotly({
     if(is.null(selected_series())) return(NULL)
 
     selected_series() %>%
       mutate(date = yearmonth(date)) %>%
       as_tsibble(index=date) %>%
       ACF(value, lag_max=50) %>%
-      autoplot()
+      autoplot()  |>
+      ggplotly()
+
 
   })
 
-  output$seasonalPlot <- renderPlot({
+  output$seasonalPlot <- renderPlotly({
     if(is.null(selected_series())) return(NULL)
 
     selected_series() %>%
       mutate(date = yearmonth(date)) %>%
       as_tsibble(index=date) %>%
-      gg_season(value, labels = "both")
+      gg_season(value, labels = "both") |>
+      ggplotly()
+
 
   })
 
-  output$subseriesPlot <- renderPlot({
+  output$subseriesPlot <- renderPlotly({
     if(is.null(selected_series())) return(NULL)
 
     selected_series() %>%
       mutate(date = yearmonth(date)) %>%
       as_tsibble(index=date) %>%
-      gg_subseries(value)
+      gg_subseries(value) |>
+      ggplotly()
+
 
   })
 
-  output$lagPlot <- renderPlot({
+  output$lagPlot <- renderPlotly({
     if(is.null(selected_series())) return(NULL)
 
     selected_series() %>%
       mutate(date = yearmonth(date)) %>%
       as_tsibble(index=date) %>%
-      gg_lag(value, geom = "point", period = "year")
-
+      gg_lag(value, geom = "point", period = "year") |>
+      ggplotly()
+    
   })
 
 
