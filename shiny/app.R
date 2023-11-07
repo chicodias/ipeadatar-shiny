@@ -38,15 +38,19 @@ ui <- fluidPage(
              tabPanel("Modelagem",
                       sidebarLayout(
                         sidebarPanel(
-                            tableOutput("nameDisplay"),
-                            h1("Parâmetros"),
-                            helpText("Aqui você pode escolher diferentes parâmetros para as análises"),
-                            sliderInput("lambda", "Selecione lambda de box-cox", min= -2, max = 2, step = 0.5, value = 1),
-                            sliderInput("lagMax", "Selecione lagmax do correlograma", min= 0, max = 100, step = 10, value = 50),
+                          tableOutput("nameDisplay"),
+                          h1("Parâmetros"),
+                          helpText("Aqui você pode escolher diferentes parâmetros para as análises"),
+                          sliderInput("lagMax", "Selecione lagmax do correlograma", min= 0, max = 100, step = 10, value = 50),
+                          sliderInput("lambda", "Selecione lambda de box-cox", min= -2, max = 2, step = 0.01, value = 1),
+                          checkboxInput("bestLambda", "Use lambda ótimo")
                           ),
                       mainPanel(
                         add_busy_spinner(spin = "fading-circle"),
+                        h1(textOutput("seriesTitle")),
                         plotlyOutput("seriesPlot"),
+                        h1("Decomposição"),
+                        plotlyOutput("stlPlot"),
                         h1("Correlograma"),
                         plotlyOutput("corrPlot"),
                         h1("Sazonal"),
@@ -58,8 +62,31 @@ ui <- fluidPage(
                         )
                       )
                       )
-             )
+    ## tabPanel("Previsão",
+    ##          sidebarLayout(
+    ##            sidebarPanel(
+    ##              numericInput("pred_rng", "Intervalo de predição (semanas)", min=1, max=10, value=3),
+    ##              radioButtons("radio3",h3("Modelo") ,
+    ##                           choices = list("ARIMA" = 0, "NNAR" = 1),
+    ##                           selected = 0
+    ##                           ),
+    ##              checkboxInput("usemm", "Modelar com a média móvel", value = FALSE),
+    ##              numericInput("minScore", "I.C. Mínimo (%)", min=60, max=99, value=80),
+    ##              numericInput("maxScore", "I.C. Máximo (%)", min=60, max=99.9, value=95)
+    ##                                     #span(tags$i(h5("Dados retirados do portal brasil.io")), style = "color:#045a8d"),
+    ##                                     #span(tags$i(h6("A notificação dos casos está sujeita a uma variação significativa devido a política de testagem e capacidade das Secretarias Estaduais e Municipais de Saúde.")), style = "color:#045a8d"),
+    ##            ),
+    ##            mainPanel(
+    ##                                     # graficos do plotly por estado
+    ##              h4(textOutput("title")),
+    ##                                     # radioButtons("predType", "" , vars_plot_mm, selected = "totalCases"),
+    ##              plotlyOutput(outputId = "predict_cases")
+    ##              )
+    ##          )
+    ##          )
+    )
 )
+
 
 # Server logic
 server <- function(input, output, session) {
@@ -73,17 +100,31 @@ server <- function(input, output, session) {
 
   })
 
-  # observeEvent(input$lambda, {
-  #   selected_series()
-    
-  
-  # })
+  dados <- reactive({
+    req(input$code)
+    ipeadatar::ipeadata(input$code, quiet = T)
+  })
+
+  eventReactive(input$lambda, {
+    selected_series <- {
+     dados () |>
+        mutate(value = box_cox(value, input$lambda))
+    }
+  })
+
 
   # infos da série selecionada
   series_data <- reactive({
     req(input$code)
     datasets |>
       filter(code == input$code)
+  })
+
+  current_season_period <- reactive({
+    switch(series_data()$freq,
+           "Mensal" = yearmonth,
+           "Anual" = year,
+           "day" = dmy)
   })
 
 
@@ -114,8 +155,9 @@ server <- function(input, output, session) {
   selected_series_ts <- reactive({
     selected_series() |>
       select(!c("uname", "tcode")) |>
-#      mutate(date = yearmonth(date)) %>%
-        as_tsibble(index=date)
+      mutate(date = current_season_period()(date)) |>
+      as_tsibble(index=date) |>
+      fill_gaps()
   })
 
   ## Tooltip com o numero de séries que atendam aos filtros
@@ -124,6 +166,13 @@ server <- function(input, output, session) {
 
     paste(c("Total de séries disponíveis:",len))
   })
+
+  output$seriesTitle <- renderText({
+    if(is.null(series_data())) return(NULL)
+    paste(c(series_data()$name, " - ", series_data()$freq))
+  })
+
+
 
   ## Tabela com os datasets
   ## TODO: coluna "Adicionar ao gráfico"
@@ -150,6 +199,14 @@ server <- function(input, output, session) {
     updateSelectizeInput(session = session, inputId = "code",
                          choices = series_info()$code, selected = selectedCode, server = TRUE)
     })
+
+  observeEvent(input$bestLambda, {
+  lambda <- selected_series_ts() |>
+  features(value, features = guerrero) |>
+    pull(lambda_guerrero)
+
+  updateSliderInput(session, "lambda", value = lambda)
+  })
 
   ## Baixa um csv com as séries selecionadas
   ## FIXME: retorno quando selected_series() é NULL
@@ -206,22 +263,18 @@ server <- function(input, output, session) {
   output$corrPlot <- renderPlotly({
     if(is.null(selected_series())) return(NULL)
 
-    selected_series() %>%
-      mutate(date = yearmonth(date)) %>%
-      as_tsibble(index=date) %>%
-      ACF(value, lag_max=input$lagMax) %>%
+    selected_series_ts() |>
+      ACF(value, lag_max=input$lagMax) |>
       autoplot()  |>
       ggplotly()
-
 
   })
 
   output$seasonalPlot <- renderPlotly({
     if(is.null(selected_series())) return(NULL)
+    if(series_data()$freq == "Anual") return(NULL)
 
-    selected_series() %>%
-      mutate(date = yearmonth(date)) %>%
-      as_tsibble(index=date) %>%
+    selected_series_ts() %>%
       gg_season(value, labels = "both") |>
       ggplotly()
 
@@ -231,28 +284,50 @@ server <- function(input, output, session) {
   output$subseriesPlot <- renderPlotly({
     if(is.null(selected_series())) return(NULL)
 
-    selected_series() %>%
-      mutate(date = yearmonth(date)) %>%
-      as_tsibble(index=date) %>%
+    selected_series_ts() |>
       gg_subseries(value) |>
       ggplotly()
 
 
   })
 
+  lag_plot_period <- reactive({
+    switch(series_data()$freq,
+           "Mensal" = "month",
+           "Anual" = "year",
+           "day" = "day")
+  })
+
+
   output$lagPlot <- renderPlotly({
     if(is.null(selected_series())) return(NULL)
 
-    selected_series() %>%
-      mutate(date = yearmonth(date)) %>%
-      as_tsibble(index=date) %>%
-      gg_lag(value, geom = "point", period = "year") |>
+    selected_series_ts() |>
+      gg_lag(value, geom = "point", period = lag_plot_period()) |>
       ggplotly()
     
   })
 
+  ## output$title <- renderText({
+  ##   dfit$title
+  ## })
+  ## ## Previsão
+  ## # objeto reativo que armazena o modelo utilizado
+  ## dfit <- reactiveValues(data = NULL, xreg = NULL, title = NULL)
 
+  ##   # recebe um modelo e calcula a previsao com a confiança estipulada
+  ## calcula_pred <- reactive({
+  ##   lwr <- input$maxScore
+  ##   upr <- input$minScore
+  ##   rng <- input$pred_rng
+  ##   fit <- dfit$data
+  ##   #xreg <- dfit$xreg
 
+  ##   f <- forecast_c(fit, 7 * rng, PI = T, level = c(lwr/100, upr/100))#, xreg = xreg$mean)
+  ##   tmp <- autoplot(f)
+  ##   dfit$title <- tmp$labels$title
+  ##   f
+  ## })
 }
 
 # Run the Shiny app
