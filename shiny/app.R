@@ -40,10 +40,12 @@ ui <- fluidPage(
                         sidebarPanel(
                           tableOutput("nameDisplay"),
                           helpText("Aqui você pode escolher entre as bases disponíveis no pacote IpeaDataR"),
-                          sliderInput("lambda", "Selecione lambda de box-cox", min= -2, max = 2, step = 0.5, value = 1)
+                          sliderInput("lambda", "Selecione lambda de box-cox", min= -2, max = 2, step = 0.5, value = 1),
+                          checkboxInput("bestLambda", "Use lambda ótimo")
                           ),
                       mainPanel(
                         add_busy_spinner(spin = "fading-circle"),
+                        h1(textOutput("seriesTitle")),
                         plotlyOutput("seriesPlot"),
                         h1("Decomposição"),
                         plotlyOutput("stlPlot"),
@@ -96,15 +98,14 @@ server <- function(input, output, session) {
 
   })
 
-
-  ## observeEvent(input$lambda, {
-
-  ## }
+  dados <- reactive({
+    req(input$code)
+    ipeadatar::ipeadata(input$code, quiet = T)
+  })
 
   eventReactive(input$lambda, {
     selected_series <- {
-      req(input$code)
-      dados <- ipeadatar::ipeadata(input$code, quiet = T) |>
+     dados () |>
         mutate(value = box_cox(value, input$lambda))
     }
   })
@@ -163,6 +164,13 @@ server <- function(input, output, session) {
     paste(c("Total de séries disponíveis:",len))
   })
 
+  output$seriesTitle <- renderText({
+    if(is.null(series_data())) return(NULL)
+    paste(c(series_data()$name, " - ", series_data()$freq))
+  })
+
+
+
   ## Tabela com os datasets
   ## TODO: coluna "Adicionar ao gráfico"
   output$dataTab <- DT::renderDataTable({
@@ -188,6 +196,14 @@ server <- function(input, output, session) {
     updateSelectizeInput(session = session, inputId = "code",
                          choices = series_info()$code, selected = selectedCode, server = TRUE)
     })
+
+  observeEvent(input$bestLambda, {
+  lambda <- selected_series_ts() |>
+  features(value, features = guerrero) |>
+    pull(lambda_guerrero)
+
+  updateSliderInput(session, "lambda", value = lambda)
+  })
 
   ## Baixa um csv com as séries selecionadas
   ## FIXME: retorno quando selected_series() é NULL
@@ -309,8 +325,6 @@ server <- function(input, output, session) {
   ##   dfit$title <- tmp$labels$title
   ##   f
   ## })
-
-
 }
 
 # Run the Shiny app
