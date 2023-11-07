@@ -41,7 +41,7 @@ ui <- fluidPage(
                             tableOutput("nameDisplay"),
                             helpText("Aqui você pode escolher entre as bases disponíveis no pacote IpeaDataR"),
                             sliderInput("lambda", "Selecione lambda de box-cox", min= -2, max = 2, step = 0.5, value = 1),
-                            sliderInput("lagMax", "Selecione lagmax de box-cox", min= 0, max = 100, step = 10, value = 50),
+                            sliderInput("lagMax", "Selecione lagmax do correlograma", min= 0, max = 100, step = 10, value = 50),
                           ),
                       mainPanel(
                         add_busy_spinner(spin = "fading-circle"),
