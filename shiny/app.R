@@ -9,7 +9,7 @@ library(shinyWidgets)
 library(DT)
 
 # Retrieve data
-write_csv(ipeadatar::available_series("br"), "datasets.csv")
+# write_csv(ipeadatar::available_series("br"), "datasets.csv")
 
 datasets <- read_csv("datasets.csv")
 #subject <- ipeadatar::available_subjects(language = c("en","br"))
@@ -43,12 +43,15 @@ ui <- fluidPage(
                           sliderInput("lambda", "Selecione lambda de box-cox", min= -2, max = 2, step = 0.5, value = 1)
                           ),
                       mainPanel(
-                          add_busy_spinner(spin = "fading-circle"),
+                        add_busy_spinner(spin = "fading-circle"),
                         plotlyOutput("seriesPlot"),
+                        h1("Correlograma"),
                         plotlyOutput("corrPlot"),
-#                        plotlyOutput("stlPlot"),
+                        h1("Sazonal"),
                         plotlyOutput("seasonalPlot"),
+                        h1("Subséries"),
                         plotlyOutput("subseriesPlot"),
+                        h1("Lag plot"),
                         plotlyOutput("lagPlot"),
                         )
                       )
