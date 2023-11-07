@@ -9,7 +9,7 @@ library(shinyWidgets)
 library(DT)
 
 # Retrieve data
-#write_csv(ipeadatar::available_series("br"), "datasets.csv")
+write_csv(ipeadatar::available_series("br"), "datasets.csv")
 
 datasets <- read_csv("datasets.csv")
 #subject <- ipeadatar::available_subjects(language = c("en","br"))
@@ -62,9 +62,18 @@ server <- function(input, output, session) {
   # Objeto dinâmico que armazena as séries exibidas
   selected_series <- reactive({
     req(input$code)
-    dados <- ipeadatar::ipeadata(input$code, quiet = T)
+    dados <- ipeadatar::ipeadata(input$code, quiet = T) |>
+      mutate(value = box_cox(value, input$lambda))
 #      group_by(code) |> mutate(value =)
 
+  })
+
+  eventReactive(input$lambda, {
+    selected_series <- {
+      req(input$code)
+      dados <- ipeadatar::ipeadata(input$code, quiet = T) |>
+        mutate(value = box_cox(value, input$lambda))
+    }
   })
 
   # infos da série selecionada
