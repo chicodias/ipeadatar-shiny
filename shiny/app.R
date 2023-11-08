@@ -16,6 +16,11 @@ datasets <- read_csv("datasets.csv")
 
 # UI (User Interface)
 ui <- fluidPage(
+  ## seletor de temas
+  ##  shinythemes::themeSelector(),
+  ## pra adicionar pra sempre
+  ## theme = shinythemes::shinytheme("united"),
+  add_busy_spinner("pixel", position = 'top-left'),
     tabsetPanel(id = "tabs",
              tabPanel("Explorador", value = "exp",
                       sidebarLayout(
@@ -27,7 +32,6 @@ ui <- fluidPage(
                           pickerInput("theme", "Tema", choices = unique(datasets$theme), selected = unique(datasets$theme), multiple = TRUE),
                           pickerInput("source", "Fonte", choices = unique(datasets$source), selected = unique(datasets$source), multiple = TRUE, options = list(`actions-box` = TRUE)),
                           pickerInput("status", "Status", choices = c("Ativa", "Inativa"), selected = c("Ativa", "Inativa"), multiple = TRUE),
-                          downloadButton("downloadData", "Baixar CSV"),
                           ),
                         mainPanel(
                         DT::dataTableOutput("dataTab")
@@ -37,27 +41,33 @@ ui <- fluidPage(
              tabPanel("Modelagem", value = "mod",
                       sidebarLayout(
                         sidebarPanel(
-                          tableOutput("nameDisplay"),
-                          h1("Parâmetros"),
-                          helpText("Aqui você pode escolher diferentes parâmetros para as análises"),
-                          sliderInput("lagMax", "Selecione lagmax do correlograma", min= 0, max = 100, step = 10, value = 50),
+                        h3(textOutput("seriesTitle")),
+                          plotlyOutput("seriesPlot"),
+                          # FIXME delimitar o intervalo de tempo no backend
+                          sliderInput("date", "Intervalo de tempo", min = as_date("2020-01-01"), max = as_date("2023-01-01"), value = as_date(c("2021-01-01","2022-01-01" ))),
+                          h2("Transformações"),
                           sliderInput("lambda", "Selecione lambda de box-cox", min= -2, max = 2, step = 0.01, value = 1),
-                          checkboxInput("bestLambda", "Use lambda ótimo"),
-                          plotlyOutput("seriesPlot")
+                          checkboxInput("bestLambda", "Use lambda ótimo (Guerrero)"),
+                          sliderInput("rollMean", "Selecione numeros de lags da media movel", min= 0, max = 30, step = 1, value = 0),
+                          h2("Parâmetros"),
+                          helpText("Aqui você pode escolher diferentes parâmetros para as análises"),
                           ),
                       mainPanel(
-                        add_busy_spinner(spin = "fading-circle"),
-                        h1(textOutput("seriesTitle")),
+                        tableOutput("nameDisplay"),
+                          downloadButton("downloadData", "Baixar CSV"),
                         h2("Decomposição"),
-                        plotlyOutput("stlPlot"),
+                        radioButtons("stlType", "Selecione tipo de decomposição", choices = c("STL", "Clássica", "X-11", "SEATS"), selected = "STL"),
+                        sliderInput("stlWin", "Selecione janela da decomposição", min= 1, max = 21, step = 1, value = 14),
+                        plotOutput("stlPlot"),
                         h2("Correlograma"),
+                        sliderInput("lagMax", "Selecione lagmax do correlograma", min= 0, max = 50, step = 1, value = 30),
                         plotlyOutput("corrPlot"),
                         h2("Sazonal"),
-                        plotlyOutput("seasonalPlot"),
+                        plotOutput("seasonalPlot"),
                         h2("Subséries"),
-                        plotlyOutput("subseriesPlot"),
+                        plotOutput("subseriesPlot"),
                         h2("Lag plot"),
-                        plotlyOutput("lagPlot"),
+                        plotOutput("lagPlot"),
                         )
                       )
                       )
@@ -90,47 +100,10 @@ ui <- fluidPage(
 # Server logic
 server <- function(input, output, session) {
 
-  # Objeto dinâmico que armazena as séries exibidas
-  selected_series <- reactive({
-    req(input$code)
-    dados <- ipeadatar::ipeadata(input$code, quiet = T) |>
-      mutate(value = box_cox(value, input$lambda))
-#      group_by(code) |> mutate(value =)
+  ## Explorador
 
-  })
-
-  # Obtem os dados da API do IPEA
-  dados <- reactive({
-    req(input$code)
-    ipeadatar::ipeadata(input$code, quiet = T)
-  })
-
-  # Transforma o conjunto de dados de acordo com lambda
-  eventReactive(input$lambda, {
-    selected_series <- {
-     dados () |>
-        mutate(value = box_cox(value, input$lambda))
-    }
-  })
-
-
-  # infos da série selecionada
-  series_data <- reactive({
-    req(input$code)
-    datasets |>
-      filter(code == input$code)
-  })
-
-  current_season_period <- reactive({
-    switch(series_data()$freq,
-           "Mensal" = yearmonth,
-           "Anual" = year,
-           dmy)
-  })
-
-
-  # armazena as séries disponiveis
-  series_info <- reactive({
+  # Objeto dinâmico que armazena todas as séries disponiveis que atendam aos filtros
+  all_series <- reactive({
       req(input$theme, input$source, input$freq, input$status)
 
       opts <- datasets |>
@@ -140,45 +113,28 @@ server <- function(input, output, session) {
         freq %in% input$freq,
         status %in% input$status
       )
-
+      # Atualiza o input do código da série
       updateSelectizeInput(session = session, inputId = "code", choices = opts$code, server = TRUE)
-      opts
+      opts |> arrange(desc(lastupdate))
   })
 
-
-  # Armazena as séries que o usuário filtrou
-  current_datasets <- reactive({
-    req(input$code)
-      datasets |> filter(code %in% input$code)
-  })
-
-  # Armazena as séries em forma de ts
-  selected_series_ts <- reactive({
-    selected_series() |>
-      select(!c("uname", "tcode")) |>
-      mutate(date = current_season_period()(date)) |>
-      as_tsibble(index=date) |>
-      fill_gaps()
-  })
-
-  ## Tooltip com o numero de séries que atendam aos filtros
+  ## Tooltip com o total de séries
   output$nSeries <- renderText({
-    len <- series_info()$code |> unique() |> length()
+    len <- all_series()$code |> unique() |> length()
 
-    paste(c("Total de séries disponíveis:",len))
+    paste(c("Total de séries disponíveis:", len))
   })
 
-  output$seriesTitle <- renderText({
-    if(is.null(series_data())) return(NULL)
-    paste(c(series_data()$name, " - ", series_data()$freq))
-  })
 
+
+  # Armazena os dados obtidos externamente e informaçoes
+  dados <- reactiveValues(df = NULL, info = NULL)
 
 
   ## Tabela com os datasets
   ## TODO: coluna "Adicionar ao gráfico"
   output$dataTab <- DT::renderDataTable({
-    series_info()  |>
+    all_series()  |>
       rename(
         `Código` = code,
         `Nome` = name,
@@ -190,25 +146,73 @@ server <- function(input, output, session) {
         )
   }, selection = 'single')
 
-  ## Observador que inclui uma célula da tabela no input de código da série
+  ## Observador que inclui a célula da tabela no input de código da série
   observeEvent(input$dataTab_row_last_clicked, {
     rowNum <- input$dataTab_row_last_clicked
     if(is.null(rowNum)) return(NULL)
-    selectedCode <- series_info() |> slice(rowNum) |> pull(code) |> as.character()
+    selectedCode <- all_series() |> slice(rowNum) |> pull(code) |> as.character()
 
-
+    ## Seleciona a série clicada na tabela
     updateSelectizeInput(session = session, inputId = "code",
-                         choices = series_info()$code, selected = selectedCode, server = TRUE)
-
+                         choices = all_series()$code, selected = selectedCode, server = TRUE)
+    # Muda para o próximo panel após selecionar a série
     updateTabsetPanel(session, "tabs", selected = "mod")
+
     })
 
-  observeEvent(input$bestLambda, {
-  lambda <- selected_series_ts() |>
-  features(value, features = guerrero) |>
-    pull(lambda_guerrero)
+  ## Modelagem
+  # Obtém os dados a partir da mudança no input com a série selecionada
+  observeEvent(input$code,
+  {
+  # Obtem os dados da API do IPEA
+    dados$info <- datasets |> filter(code %in% input$code)
+    # Os dados originais são armazenados
+    dados$df <- ipeadatar::ipeadata(input$code, quiet = T)
+    dados
+  })
 
-  updateSliderInput(session, "lambda", value = lambda)
+  # Retorna os valores da série transformados
+  selected_series <- reactive({
+    req(input$code)
+    dados$df |>
+  # Transforma o conjunto de dados de acordo com lambda
+    mutate(value = box_cox(value, input$lambda) ) |>
+  # média móvel de acordo com a janela estipulada
+    mutate(value = slider::slide_dbl(value, mean,
+                                   .before = input$rollMean, .complete = TRUE))
+  })
+
+  # Armazena informaçoes sobre a série selecionada
+  series_data <- reactive({
+    req(input$code)
+    dados$info
+  })
+
+  # Retorna a função utilizada de acordo com a frequência da série
+  current_season_period <- reactive({
+    switch(series_data()$freq,
+           "Mensal" = yearmonth,
+           "Anual" = year,
+           "Diária" = as_date)
+  })
+
+  # Armazena a série em forma de tsibble
+  selected_series_ts <- reactive({
+    selected_series() |>
+      select(!c("uname", "tcode")) |> #  \/ isso daqui é bem tricky haha
+      mutate(date = current_season_period()(date)) |>
+      as_tsibble(index=date) |>
+      fill_gaps() |>
+      fill(code, value)
+  })
+
+ # Calcula o melhor lambda e atualiza o slider
+  observeEvent(input$bestLambda, {
+    lambda <- selected_series_ts() |>
+      features(value, features = guerrero) |>
+      pull(lambda_guerrero)
+
+    updateSliderInput(session, "lambda", value = lambda)
   })
 
   ## Baixa um csv com as séries selecionadas
@@ -222,7 +226,7 @@ server <- function(input, output, session) {
     }
   )
 
-  ## Tabela da sidebar que exibe as séries selecionadas pelo usuário
+  ## Tabela da sidebar que exibe infos da série selecionada
   output$nameDisplay <- renderTable({
     req(input$code)
     series_data() |> select(code, name, source, lastupdate) |>
@@ -233,14 +237,12 @@ server <- function(input, output, session) {
           `Fonte` = source,
           `Última atualização` = lastupdate
         )
-
   })
-
 
   ## Grafico interativo com as séries selecionadas pelo usuário
   output$seriesPlot <- renderPlotly({
     if(is.null(selected_series())) return(NULL)
-    plot_ly(data = selected_series(), x = ~date, y = ~value, color = ~code, type = 'scatter', mode = 'lines') %>%
+    plot_ly(data = selected_series_ts(), x = ~date, y = ~value, color = ~code, type = 'scatter', mode = 'lines') %>%
       layout(
         #title = paste("Series:", selected_series() |> select(code) |> distinct()),
         xaxis = list(title = "Data"),
@@ -248,17 +250,23 @@ server <- function(input, output, session) {
       )
   })
 
+  ## Título da série
+ output$seriesTitle <- renderText({
+    if(is.null(series_data())) return(NULL)
+    paste(c(series_data()$name, " - ", series_data()$freq))
+  })
+
   ## Decomp STL da série de acordo com janela e parametros
-  output$stlPlot <- renderPlotly({
+  ## TODO decomposicoes diferentes, de acordo com input$stlType
+  output$stlPlot <- renderPlot({
 
     selected_series_ts() |>
     model(
-      STL(value ~ trend(window = 7) +
+      STL(value ~ trend(window = input$stlWin) +
             season(window = "periodic"),
-          robust = TRUE)) |>
+          robust = F)) |>
       components() |>
-      autoplot() |>
-      ggplotly()
+      autoplot()
 
   })
   
@@ -268,32 +276,34 @@ server <- function(input, output, session) {
 
     selected_series_ts() |>
       ACF(value, lag_max=input$lagMax) |>
-      autoplot()  |>
+      autoplot() |>
       ggplotly()
 
   })
 
-  output$seasonalPlot <- renderPlotly({
+  ## Plot Sazonal
+  output$seasonalPlot <- renderPlot({
     if(is.null(selected_series())) return(NULL)
     if(series_data()$freq == "Anual") return(NULL)
 
     selected_series_ts() %>%
-      gg_season(value, labels = "both") |>
-      ggplotly()
+      gg_season(value, labels = "both")
 
 
   })
 
-  output$subseriesPlot <- renderPlotly({
+  ## Subséries
+  ## FIXME: alguns casos ele não plota a subsérie, como nas séries mais recentes diárias
+  output$subseriesPlot <- renderPlot({
     if(is.null(selected_series())) return(NULL)
 
     selected_series_ts() |>
-      gg_subseries(value) |>
-      ggplotly()
-
+      gg_subseries(value)
 
   })
 
+  ## Retorna o período utilizado pelo lag plot
+  ## FIXME: Em alguns casos fica colorido, outros não
   lag_plot_period <- reactive({
     switch(series_data()$freq,
            "Mensal" = "month",
@@ -301,15 +311,17 @@ server <- function(input, output, session) {
            "day" = "day")
   })
 
-
-  output$lagPlot <- renderPlotly({
+  ## Lag plot
+  output$lagPlot <- renderPlot({
     if(is.null(selected_series())) return(NULL)
 
     selected_series_ts() |>
-      gg_lag(value, geom = "point", period = lag_plot_period()) |>
-      ggplotly()
-    
+      gg_lag(value, geom = "point", period = lag_plot_period())
+
   })
+  ## Modelagem
+  ## TODO: modelos arima e sarima reaproveitar o código em
+  ## https://github.com/predict-icmc/covid19/blob/cbbae41ed7433df41f384183780cc14f652b1223/shiny/site_final/covid-19/app.R#L394
 
   ## output$title <- renderText({
   ##   dfit$title
