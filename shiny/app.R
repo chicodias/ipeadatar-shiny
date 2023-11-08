@@ -41,7 +41,9 @@ ui <- fluidPage(
              tabPanel("Modelagem", value = "mod",
                       sidebarLayout(
                         sidebarPanel(
-                        h3(textOutput("seriesTitle")),
+                          h2("Parâmetros"),
+                          helpText("Aqui você pode escolher diferentes parâmetros para as análises"),
+                        h4(textOutput("seriesTitle")),
                           plotlyOutput("seriesPlot"),
                           # FIXME delimitar o intervalo de tempo no backend
                           sliderInput("date", "Intervalo de tempo", min = as_date("2020-01-01"), max = as_date("2023-01-01"), value = as_date(c("2021-01-01","2022-01-01" ))),
@@ -49,12 +51,10 @@ ui <- fluidPage(
                           sliderInput("lambda", "Selecione lambda de box-cox", min= -2, max = 2, step = 0.01, value = 1),
                           checkboxInput("bestLambda", "Use lambda ótimo (Guerrero)"),
                           sliderInput("rollMean", "Selecione numeros de lags da media movel", min= 0, max = 30, step = 1, value = 0),
-                          h2("Parâmetros"),
-                          helpText("Aqui você pode escolher diferentes parâmetros para as análises"),
-                          ),
-                      mainPanel(
                         tableOutput("nameDisplay"),
                           downloadButton("downloadData", "Baixar CSV"),
+                          ),
+                      mainPanel(
                         h2("Decomposição"),
                         radioButtons("stlType", "Selecione tipo de decomposição", choices = c("STL", "Clássica", "X-11", "SEATS"), selected = "STL"),
                         sliderInput("stlWin", "Selecione janela da decomposição", min= 1, max = 21, step = 1, value = 14),
@@ -203,6 +203,7 @@ server <- function(input, output, session) {
       mutate(date = current_season_period()(date)) |>
       as_tsibble(index=date) |>
       fill_gaps() |>
+      ## INFO: os lapsos na série são imputados com o valor anterior abaixo
       fill(code, value)
   })
 
