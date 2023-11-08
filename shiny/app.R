@@ -16,15 +16,14 @@ datasets <- read_csv("datasets.csv")
 
 # UI (User Interface)
 ui <- fluidPage(
-  navbarPage(
-             "Ipeadata Explorer",
-             tabPanel("Explorador",
+    tabsetPanel(id = "tabs",
+             tabPanel("Explorador", value = "exp",
                       sidebarLayout(
                         sidebarPanel(
                           helpText("Aqui você pode escolher entre as bases disponíveis no pacote IpeaDataR"),
                           textOutput("nSeries"),
                           selectizeInput("code", "Escolha a(s) série(s):", choices = NULL, multiple = TRUE),
-                          pickerInput("freq", "Frequência", choices = unique(datasets$freq), selected = unique(datasets$freq), options = list(`actions-box` = TRUE), multiple = TRUE),
+                          pickerInput("freq", "Frequência", choices = c("Mensal", "Anual", "Diária"), selected =  c("Mensal", "Anual", "Diária"), options = list(`actions-box` = TRUE), multiple = TRUE),
                           pickerInput("theme", "Tema", choices = unique(datasets$theme), selected = unique(datasets$theme), multiple = TRUE),
                           pickerInput("source", "Fonte", choices = unique(datasets$source), selected = unique(datasets$source), multiple = TRUE, options = list(`actions-box` = TRUE)),
                           pickerInput("status", "Status", choices = c("Ativa", "Inativa"), selected = c("Ativa", "Inativa"), multiple = TRUE),
@@ -35,7 +34,7 @@ ui <- fluidPage(
                         )
                       )
                       ),
-             tabPanel("Modelagem",
+             tabPanel("Modelagem", value = "mod",
                       sidebarLayout(
                         sidebarPanel(
                           tableOutput("nameDisplay"),
@@ -43,21 +42,21 @@ ui <- fluidPage(
                           helpText("Aqui você pode escolher diferentes parâmetros para as análises"),
                           sliderInput("lagMax", "Selecione lagmax do correlograma", min= 0, max = 100, step = 10, value = 50),
                           sliderInput("lambda", "Selecione lambda de box-cox", min= -2, max = 2, step = 0.01, value = 1),
-                          checkboxInput("bestLambda", "Use lambda ótimo")
+                          checkboxInput("bestLambda", "Use lambda ótimo"),
+                          plotlyOutput("seriesPlot")
                           ),
                       mainPanel(
                         add_busy_spinner(spin = "fading-circle"),
                         h1(textOutput("seriesTitle")),
-                        plotlyOutput("seriesPlot"),
-                        h1("Decomposição"),
+                        h2("Decomposição"),
                         plotlyOutput("stlPlot"),
-                        h1("Correlograma"),
+                        h2("Correlograma"),
                         plotlyOutput("corrPlot"),
-                        h1("Sazonal"),
+                        h2("Sazonal"),
                         plotlyOutput("seasonalPlot"),
-                        h1("Subséries"),
+                        h2("Subséries"),
                         plotlyOutput("subseriesPlot"),
-                        h1("Lag plot"),
+                        h2("Lag plot"),
                         plotlyOutput("lagPlot"),
                         )
                       )
@@ -100,11 +99,13 @@ server <- function(input, output, session) {
 
   })
 
+  # Obtem os dados da API do IPEA
   dados <- reactive({
     req(input$code)
     ipeadatar::ipeadata(input$code, quiet = T)
   })
 
+  # Transforma o conjunto de dados de acordo com lambda
   eventReactive(input$lambda, {
     selected_series <- {
      dados () |>
@@ -124,7 +125,7 @@ server <- function(input, output, session) {
     switch(series_data()$freq,
            "Mensal" = yearmonth,
            "Anual" = year,
-           "day" = dmy)
+           dmy)
   })
 
 
@@ -198,6 +199,8 @@ server <- function(input, output, session) {
 
     updateSelectizeInput(session = session, inputId = "code",
                          choices = series_info()$code, selected = selectedCode, server = TRUE)
+
+    updateTabsetPanel(session, "tabs", selected = "mod")
     })
 
   observeEvent(input$bestLambda, {
