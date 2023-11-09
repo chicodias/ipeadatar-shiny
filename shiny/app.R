@@ -41,33 +41,65 @@ ui <- fluidPage(
              tabPanel("Modelagem", value = "mod",
                       sidebarLayout(
                         sidebarPanel(
-                          h2("Parâmetros"),
-                          helpText("Aqui você pode escolher diferentes parâmetros para as análises"),
                         h4(textOutput("seriesTitle")),
                           plotlyOutput("seriesPlot"),
                           # FIXME delimitar o intervalo de tempo no backend
-                          sliderInput("date", "Intervalo de tempo", min = as_date("2020-01-01"), max = as_date("2023-01-01"), value = as_date(c("2021-01-01","2022-01-01" ))),
+#                          sliderInput("date", "Intervalo de tempo", min = as_date("2020-01-01"), max = as_date("2023-01-01"), value = as_date(c("2021-01-01","2022-01-01" ))),
                           h2("Transformações"),
                           sliderInput("lambda", "Selecione lambda de box-cox", min= -2, max = 2, step = 0.01, value = 1),
                           checkboxInput("bestLambda", "Use lambda ótimo (Guerrero)"),
-                          sliderInput("rollMean", "Selecione numeros de lags da media movel", min= 0, max = 30, step = 1, value = 0),
+#                          sliderInput("rollMean", "Selecione numeros de lags da media movel", min= 0, max = 30, step = 1, value = 0),
                         tableOutput("nameDisplay"),
                           downloadButton("downloadData", "Baixar CSV"),
                           ),
-                      mainPanel(
-                        h2("Decomposição"),
-                        radioButtons("stlType", "Selecione tipo de decomposição", choices = c("STL", "Clássica", "X-11", "SEATS"), selected = "STL"),
-                        sliderInput("stlWin", "Selecione janela da decomposição", min= 1, max = 21, step = 1, value = 14),
-                        plotOutput("stlPlot"),
-                        h2("Correlograma"),
-                        sliderInput("lagMax", "Selecione lagmax do correlograma", min= 0, max = 50, step = 1, value = 30),
-                        plotlyOutput("corrPlot"),
-                        h2("Sazonal"),
-                        plotOutput("seasonalPlot"),
-                        h2("Subséries"),
-                        plotOutput("subseriesPlot"),
-                        h2("Lag plot"),
-                        plotOutput("lagPlot"),
+                        mainPanel(
+                          h2("Parâmetros"),
+                          helpText("Aqui você pode escolher diferentes parâmetros para as análises"),
+                          tabPanel("Correlograma",
+                                   sidebarLayout(
+                                     mainPanel(
+                                       plotlyOutput("corrPlot")
+                                     ),
+                                     sidebarPanel(
+                                       h2("Correlograma"),
+                                       sliderInput("lagMax", "Selecione lagmax do correlograma", min= 0, max = 180, step = 1, value = 30),
+                                       ))),
+                          tabPanel("Decomposição",
+                                   sidebarLayout(
+                                     mainPanel(
+                                       plotlyOutput("stlPlot")),
+                                     sidebarPanel(
+                                       h2("Decomposição"),
+                                       radioButtons("stlType", "Selecione tipo de decomposição", choices = c("STL", "Clássica", "X-11", "SEATS"), selected = "STL"),
+                                       sliderInput("trendWindow", "Selecione janela de tendência", min= 1, max = 21, step = 1, value = 14),
+                                       sliderInput("seasonWindow", "Selecione janela de sazonalidade", min= 5, max = 21, step = 1, value = 7),
+                                       ))),
+                         ## tabPanel("Sazonal",
+                         ##           sidebarLayout(
+                         ##             mainPanel(
+                         ##               plotOutput("seasonalPlot"),
+                         ##               ),
+                         ##            sidebarPanel(
+                         ##              h2("Sazonal")
+                         ##            ))),
+                         ## tabPanel("Subseries",
+                         ##           sidebarLayout(
+                         ##             mainPanel(
+                         ##               plotOutput("subseriesPlot")
+                         ##             ),
+                         ##             sidebarPanel(
+                         ##               h2("Subséries"),
+                         ##             ))),
+                         tabPanel("Lag plot",
+                                  sidebarLayout(
+                                     mainPanel(
+                                       plotOutput("lagPlot")
+                                     ),
+                                    sidebarPanel(
+                                      h2("Lag plot"),
+                                      )
+                                  )
+                                  )
                         )
                       )
                       )
@@ -98,10 +130,8 @@ ui <- fluidPage(
 
 
 # Server logic
-server <- function(input, output, session) {
-
+server <- function(input, output, session){
   ## Explorador
-
   # Objeto dinâmico que armazena todas as séries disponiveis que atendam aos filtros
   all_series <- reactive({
       req(input$theme, input$source, input$freq, input$status)
@@ -115,7 +145,7 @@ server <- function(input, output, session) {
       )
       # Atualiza o input do código da série
       updateSelectizeInput(session = session, inputId = "code", choices = opts$code, server = TRUE)
-      opts |> arrange(desc(lastupdate))
+      opts #|> arrange(desc(lastupdate))
   })
 
   ## Tooltip com o total de séries
@@ -176,10 +206,10 @@ server <- function(input, output, session) {
     req(input$code)
     dados$df |>
   # Transforma o conjunto de dados de acordo com lambda
-    mutate(value = box_cox(value, input$lambda) ) |>
+    mutate(value = box_cox(value, input$lambda) )# |>
   # média móvel de acordo com a janela estipulada
-    mutate(value = slider::slide_dbl(value, mean,
-                                   .before = input$rollMean, .complete = TRUE))
+    ## mutate(value = slider::slide_dbl(value, mean,
+    ##                                .before = input$rollMean, .complete = TRUE))
   })
 
   # Armazena informaçoes sobre a série selecionada
@@ -193,18 +223,20 @@ server <- function(input, output, session) {
     switch(series_data()$freq,
            "Mensal" = yearmonth,
            "Anual" = year,
-           "Diária" = as_date)
+           "Diária" = row_number)
   })
 
   # Armazena a série em forma de tsibble
   selected_series_ts <- reactive({
     selected_series() |>
-      select(!c("uname", "tcode")) |> #  \/ isso daqui é bem tricky haha
-      mutate(date = current_season_period()(date)) |>
-      as_tsibble(index=date) |>
-      fill_gaps() |>
-      ## INFO: os lapsos na série são imputados com o valor anterior abaixo
-      fill(code, value)
+      select(!c("uname", "tcode", "code")) |> #  \/ isso daqui é bem tricky haha
+      mutate(date = current_season_period()(date),
+             index = row_number()
+             ) |>
+      as_tsibble(index= date)
+          ## INFO: os lapsos na série são imputados com o valor anterior abaixo
+     # fill_gaps() |>
+     # fill(code, value)
   })
 
  # Calcula o melhor lambda e atualiza o slider
@@ -243,7 +275,7 @@ server <- function(input, output, session) {
   ## Grafico interativo com as séries selecionadas pelo usuário
   output$seriesPlot <- renderPlotly({
     if(is.null(selected_series())) return(NULL)
-    plot_ly(data = selected_series_ts(), x = ~date, y = ~value, color = ~code, type = 'scatter', mode = 'lines') %>%
+    plot_ly(data = selected_series_ts(), x = ~date, y = ~value, type = 'scatter', mode = 'lines') %>%
       layout(
         #title = paste("Series:", selected_series() |> select(code) |> distinct()),
         xaxis = list(title = "Data"),
@@ -259,15 +291,16 @@ server <- function(input, output, session) {
 
   ## Decomp STL da série de acordo com janela e parametros
   ## TODO decomposicoes diferentes, de acordo com input$stlType
-  output$stlPlot <- renderPlot({
+  output$stlPlot <- renderPlotly({
 
     selected_series_ts() |>
     model(
-      STL(value ~ trend(window = input$stlWin) +
-            season(window = "periodic"),
+      STL(value ~ trend(window = input$trendWindow) +
+            season(window = input$seasonWindow),
           robust = F)) |>
       components() |>
-      autoplot()
+      autoplot() |>
+      ggplotly()
 
   })
   
@@ -285,10 +318,10 @@ server <- function(input, output, session) {
   ## Plot Sazonal
   output$seasonalPlot <- renderPlot({
     if(is.null(selected_series())) return(NULL)
-    if(series_data()$freq == "Anual") return(NULL)
 
-    selected_series_ts() %>%
-      gg_season(value, labels = "both")
+    selected_series_ts() |>
+      as_tsibble(index =  date, regular = FALSE) |>
+      gg_season(value, labels = "both", period = lag_plot_period())
 
 
   })
@@ -299,22 +332,36 @@ server <- function(input, output, session) {
     if(is.null(selected_series())) return(NULL)
 
     selected_series_ts() |>
-      gg_subseries(value)
+      as_tsibble(index =  date, regular = FALSE) |>
+      gg_subseries(value, period = lag_plot_period())
 
   })
 
   ## Retorna o período utilizado pelo lag plot
   ## FIXME: Em alguns casos fica colorido, outros não
   lag_plot_period <- reactive({
+    req(series_data())
     switch(series_data()$freq,
            "Mensal" = "month",
            "Anual" = "year",
            "day" = "day")
   })
 
+  is_monthly <- reactive({
+    ifelse(lag_plot_period() == 'month',
+           TRUE,
+           FALSE)
+  })
+
+  is_daily <- reactive({
+    ifelse(lag_plot_period() == 'day',
+           TRUE,
+           FALSE)
+  })
+
+
   ## Lag plot
   output$lagPlot <- renderPlot({
-    if(is.null(selected_series())) return(NULL)
 
     selected_series_ts() |>
       gg_lag(value, geom = "point", period = lag_plot_period())
