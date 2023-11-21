@@ -41,15 +41,14 @@ ui <- fluidPage(
              tabPanel("Modelagem", value = "mod",
                       sidebarLayout(
                         sidebarPanel(
-                        h4(textOutput("seriesTitle")),
+                          h4(textOutput("seriesTitle")),
                           plotlyOutput("seriesPlot"),
-                          # FIXME delimitar o intervalo de tempo no backend
-#                          sliderInput("date", "Intervalo de tempo", min = as_date("2020-01-01"), max = as_date("2023-01-01"), value = as_date(c("2021-01-01","2022-01-01" ))),
+                          dateRangeInput("date", " ",language =  "pt-BR", format = "dd-mm-yyyy", separator = "até"),
                           h2("Transformações"),
                           sliderInput("lambda", "Selecione lambda de box-cox", min= -2, max = 2, step = 0.01, value = 1),
                           checkboxInput("bestLambda", "Use lambda ótimo (Guerrero)"),
-#                          sliderInput("rollMean", "Selecione numeros de lags da media movel", min= 0, max = 30, step = 1, value = 0),
-                        tableOutput("nameDisplay"),
+                          sliderInput("rollMean", "Selecione numeros de defasagens da media movel", min= 0, max = 30, step = 1, value = 0),
+                          tableOutput("nameDisplay"),
                           downloadButton("downloadData", "Baixar CSV"),
                           ),
                         mainPanel(
@@ -70,7 +69,7 @@ ui <- fluidPage(
                                        plotlyOutput("stlPlot")),
                                      sidebarPanel(
                                        h2("Decomposição"),
-                                       radioButtons("stlType", "Selecione tipo de decomposição", choices = c("STL", "Clássica", "X-11", "SEATS"), selected = "STL"),
+                                       radioButtons("stlType", "Selecione tipo de decomposição", choices = c("STL"), selected = "STL"), # no futuro teremos, "Clássica", "X-11", "SEATS"),
                                        sliderInput("trendWindow", "Selecione janela de tendência", min= 1, max = 21, step = 1, value = 14),
                                        sliderInput("seasonWindow", "Selecione janela de sazonalidade", min= 5, max = 21, step = 1, value = 7),
                                        ))),
@@ -102,29 +101,29 @@ ui <- fluidPage(
                                   )
                         )
                       )
-                      )
-    ## tabPanel("Previsão",
-    ##          sidebarLayout(
-    ##            sidebarPanel(
-    ##              numericInput("pred_rng", "Intervalo de predição (semanas)", min=1, max=10, value=3),
-    ##              radioButtons("radio3",h3("Modelo") ,
-    ##                           choices = list("ARIMA" = 0, "NNAR" = 1),
-    ##                           selected = 0
-    ##                           ),
-    ##              checkboxInput("usemm", "Modelar com a média móvel", value = FALSE),
-    ##              numericInput("minScore", "I.C. Mínimo (%)", min=60, max=99, value=80),
-    ##              numericInput("maxScore", "I.C. Máximo (%)", min=60, max=99.9, value=95)
-    ##                                     #span(tags$i(h5("Dados retirados do portal brasil.io")), style = "color:#045a8d"),
-    ##                                     #span(tags$i(h6("A notificação dos casos está sujeita a uma variação significativa devido a política de testagem e capacidade das Secretarias Estaduais e Municipais de Saúde.")), style = "color:#045a8d"),
-    ##            ),
-    ##            mainPanel(
-    ##                                     # graficos do plotly por estado
-    ##              h4(textOutput("title")),
-    ##                                     # radioButtons("predType", "" , vars_plot_mm, selected = "totalCases"),
-    ##              plotlyOutput(outputId = "predict_cases")
-    ##              )
-    ##          )
-    ##          )
+                      ),
+    tabPanel("Previsão",
+             sidebarLayout(
+               sidebarPanel(
+                 numericInput("pred_rng", "Janela de previsão", min=1, max=90, value=8),
+                 radioButtons("radio3",h3("Modelo") ,
+                              choices = list("ARIMA" = 0, "NNAR" = 1),
+                              selected = 0
+                              ),
+                 checkboxInput("usemm", "Modelar com a média móvel", value = FALSE),
+                 numericInput("minScore", "I.C. Mínimo (%)", min=60, max=99, value=80),
+                 numericInput("maxScore", "I.C. Máximo (%)", min=60, max=99.9, value=95)
+                                        #span(tags$i(h5("Dados retirados do portal brasil.io")), style = "color:#045a8d"),
+                                        #span(tags$i(h6("A notificação dos casos está sujeita a uma variação significativa devido a política de testagem e capacidade das Secretarias Estaduais e Municipais de Saúde.")), style = "color:#045a8d"),
+               ),
+               mainPanel(
+                                        # graficos do plotly por estado
+                 h4(textOutput("title")),
+                                        # radioButtons("predType", "" , vars_plot_mm, selected = "totalCases"),
+                 plotlyOutput(outputId = "prediction")
+                 )
+             )
+             )
     )
 )
 
@@ -145,7 +144,7 @@ server <- function(input, output, session){
       )
       # Atualiza o input do código da série
       updateSelectizeInput(session = session, inputId = "code", choices = opts$code, server = TRUE)
-      opts #|> arrange(desc(lastupdate))
+      opts |> arrange(desc(lastupdate))
   })
 
   ## Tooltip com o total de séries
@@ -198,6 +197,12 @@ server <- function(input, output, session){
     dados$info <- datasets |> filter(code %in% input$code)
     # Os dados originais são armazenados
     dados$df <- ipeadatar::ipeadata(input$code, quiet = T)
+
+    min_date <- min(dados$df$date)
+    max_date <- max(dados$df$date)
+    # Atualiza slider de data
+    updateDateRangeInput(session = session, inputId = "date",  min = min_date, max = max_date, start = min_date, end =  max_date)
+
     dados
   })
 
@@ -206,10 +211,12 @@ server <- function(input, output, session){
     req(input$code)
     dados$df |>
   # Transforma o conjunto de dados de acordo com lambda
-    mutate(value = box_cox(value, input$lambda) )# |>
+    mutate(value = box_cox(value, input$lambda) ) |>
+    # filtra pela data do slider
+    subset(date >= input$date[1] & date <= input$date[2]) |>
   # média móvel de acordo com a janela estipulada
-    ## mutate(value = slider::slide_dbl(value, mean,
-    ##                                .before = input$rollMean, .complete = TRUE))
+    mutate(value = slider::slide_dbl(value, mean,
+                                     .before = input$rollMean))
   })
 
   # Armazena informaçoes sobre a série selecionada
@@ -223,17 +230,17 @@ server <- function(input, output, session){
     switch(series_data()$freq,
            "Mensal" = yearmonth,
            "Anual" = year,
-           "Diária" = row_number)
+           "Diária" = as_date)
   })
 
   # Armazena a série em forma de tsibble
   selected_series_ts <- reactive({
     selected_series() |>
       select(!c("uname", "tcode", "code")) |> #  \/ isso daqui é bem tricky haha
-      mutate(date = current_season_period()(date),
+              mutate(#date = current_season_period()(date),
              index = row_number()
              ) |>
-      as_tsibble(index= date)
+      as_tsibble(index= index)
           ## INFO: os lapsos na série são imputados com o valor anterior abaixo
      # fill_gaps() |>
      # fill(code, value)
@@ -370,6 +377,18 @@ server <- function(input, output, session){
   ## Modelagem
   ## TODO: modelos arima e sarima reaproveitar o código em
   ## https://github.com/predict-icmc/covid19/blob/cbbae41ed7433df41f384183780cc14f652b1223/shiny/site_final/covid-19/app.R#L394
+
+    ## Grafico interativo com as séries selecionadas pelo usuário
+  output$prediction <- renderPlotly({
+    if(is.null(selected_series())) return(NULL)
+    plot_ly(data = selected_series_ts(), x = ~date, y = ~value, type = 'scatter', mode = 'lines') %>%
+      layout(
+        #title = paste("Series:", selected_series() |> select(code) |> distinct()),
+        xaxis = list(title = "Data"),
+        yaxis = list(title = "Valor")
+      )
+  })
+
 
   ## output$title <- renderText({
   ##   dfit$title
