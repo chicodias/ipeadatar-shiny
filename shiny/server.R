@@ -117,6 +117,26 @@ server <- function(input, output, session){
      # fill(code, value)
   })
 
+  selected_series_ts_decomp <- reactive({
+    if(is.null(selected_series_ts())) return(NULL)
+
+    ## Decomp STL da série de acordo com janela e parametros
+    if(input$decompType == "STL")
+    {
+      selected_series_ts() |>
+        model(
+          STL(value ~ trend(window = input$trendWindow) +
+                season(window = input$seasonWindow),
+              robust = T))
+    }
+    else if(input$decompType == "Nula")
+    {
+      selected_series_ts()
+    }
+    ## TODO decomposicoes diferentes, de acordo com input$decompype
+    else return(NULL)
+  })
+
  # Calcula o melhor lambda e atualiza o slider
   observeEvent(input$bestLambda, {
     lambda <- selected_series_ts() |>
@@ -155,13 +175,14 @@ server <- function(input, output, session){
 
   ## Grafico interativo com as séries selecionadas pelo usuário
   output$seriesPlot <- renderPlotly({
-    req(input$code)
+    req(selected_series_ts())
     plot_ly(data = selected_series_ts(), x = ~date, y = ~value, type = 'scatter', mode = 'lines') %>%
       layout(
         #title = paste("Series:", selected_series() |> select(code) |> distinct()),
         xaxis = list(title = "Data"),
         yaxis = list(title = "Valor")
       )
+
   })
 
   ## Título da série
@@ -170,15 +191,12 @@ server <- function(input, output, session){
     paste(c(series_data()$name, " - ", series_data()$freq))
   })
 
-  ## Decomp STL da série de acordo com janela e parametros
-  ## TODO decomposicoes diferentes, de acordo com input$stlType
   output$stlPlot <- renderPlotly({
-    req(input$code)
-    selected_series_ts() |>
-    model(
-      STL(value ~ trend(window = input$trendWindow) +
-            season(window = input$seasonWindow),
-          robust = F)) |>
+
+    if(input$decompType == "Nula")  return(NULL)
+
+    req(selected_series_ts_decomp())
+    selected_series_ts_decomp() |>
       components() |>
       autoplot() |>
       ggplotly()
@@ -187,11 +205,24 @@ server <- function(input, output, session){
   
   ## Correlograma
   output$corrPlot <- renderPlotly({
-    req(input$code)
-    selected_series_ts() |>
-      ACF(value, lag_max=input$lagMax) |>
-      autoplot() |>
-      ggplotly()
+    req(selected_series_ts_decomp())
+
+    if(input$decompType == "Nula")
+    {
+        selected_series_ts()  |>
+        ACF(value, lag_max=input$lagMax) |>
+        autoplot() |>
+        ggplotly()
+    }
+
+    else
+    {
+      selected_series_ts_decomp()  |>
+        components() |>
+        ACF(remainder, lag_max=input$lagMax) |>
+        autoplot() |>
+        ggplotly()
+    }
 
   })
 
@@ -209,7 +240,7 @@ server <- function(input, output, session){
   ## Subséries
   ## FIXME: alguns casos ele não plota a subsérie, como nas séries mais recentes diárias
   output$subseriesPlot <- renderPlot({
-    if(is.null(selected_series())) return(NULL)
+    req(selected_series_ts())
 
     selected_series_ts() |>
       as_tsibble(index =  date, regular = FALSE) |>
@@ -242,7 +273,7 @@ server <- function(input, output, session){
 
   ## Lag plot
   output$lagPlot <- renderPlot({
-    req(input$code)
+    req(selected_series_ts())
     selected_series_ts() |>
       gg_lag(value, geom = "point", period = lag_plot_period())
 
@@ -253,7 +284,8 @@ server <- function(input, output, session){
 
     ## Grafico interativo com as séries selecionadas pelo usuário
   output$prediction <- renderPlotly({
-    if(is.null(selected_series())) return(NULL)
+    req(selected_series_ts())
+
     plot_ly(data = selected_series_ts(), x = ~date, y = ~value, type = 'scatter', mode = 'lines') %>%
       layout(
         #title = paste("Series:", selected_series() |> select(code) |> distinct()),

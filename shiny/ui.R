@@ -29,10 +29,25 @@ modelagemSidebar <- function() {
     downloadButton("downloadData", "Baixar CSV")
   )
 }
+
 modelagemMainPanel <- function() {
   mainPanel(
     h2("Parâmetros"),
     helpText("Aqui você pode escolher diferentes parâmetros para as análises"),
+    # Decomposição Tab
+    tabPanel("Decomposição",
+      sidebarLayout(
+        mainPanel(
+          plotlyOutput("stlPlot")
+        ),
+        sidebarPanel(
+          h2("Decomposição"),
+          radioButtons("decompType", "Selecione tipo de decomposição", choices = c("STL", "Nula"), selected = "STL"), # incluir: "Clássica", "X-11", "SEATS"
+          sliderInput("trendWindow", "Selecione janela de tendência", min = 1, max = 21, step = 1, value = 14),
+          sliderInput("seasonWindow", "Selecione janela de sazonalidade", min = 5, max = 21, step = 1, value = 7)
+        )
+      )
+    ),
     # Correlograma Tab
     tabPanel("Correlograma",
       sidebarLayout(
@@ -46,20 +61,6 @@ modelagemMainPanel <- function() {
       )
     ),
 
-    # Decomposição Tab
-    tabPanel("Decomposição",
-      sidebarLayout(
-        mainPanel(
-          plotlyOutput("stlPlot")
-        ),
-        sidebarPanel(
-          h2("Decomposição"),
-          radioButtons("stlType", "Selecione tipo de decomposição", choices = c("STL"), selected = "STL"), # no futuro teremos, "Clássica", "X-11", "SEATS"
-          sliderInput("trendWindow", "Selecione janela de tendência", min = 1, max = 21, step = 1, value = 14),
-          sliderInput("seasonWindow", "Selecione janela de sazonalidade", min = 5, max = 21, step = 1, value = 7)
-        )
-      )
-    ),
     actionButton("nextButton", "Previsão", class = "btn-primary")
     ## # Lag Plot Tab
     ## tabPanel("Lag plot",
@@ -74,18 +75,19 @@ modelagemMainPanel <- function() {
     ##   )
     ## )
 
-    # ... Add additional tabPanels if needed
   )
 }
+
+
 previsaoSidebar <- function() {
   sidebarPanel(
     numericInput("pred_rng", "Janela de previsão", min = 1, max = 90, value = 8),
     radioButtons("radio3", h3("Modelo"), choices = list("ARIMA" = 0, "NNAR" = 1), selected = 0),
-    checkboxInput("usemm", "Modelar com a média móvel", value = FALSE),
     numericInput("minScore", "I.C. Mínimo (%)", min = 60, max = 99, value = 80),
     numericInput("maxScore", "I.C. Máximo (%)", min = 60, max = 99.9, value = 95)
   )
 }
+
 
 previsaoMainPanel <- function() {
   mainPanel(
@@ -93,6 +95,7 @@ previsaoMainPanel <- function() {
     plotlyOutput("prediction")
   )
 }
+
 
 ui <- fluidPage(
   tags$head(
