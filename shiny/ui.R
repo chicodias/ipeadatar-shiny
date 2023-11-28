@@ -42,7 +42,7 @@ modelagemMainPanel <- function() {
         ),
         sidebarPanel(
           h2("Decomposição"),
-          radioButtons("decompType", "Selecione tipo de decomposição", choices = c("STL", "Nula"), selected = "STL"), # incluir: "Clássica", "X-11", "SEATS"
+          radioButtons("decompType", "Selecione tipo de decomposição", choices = c("STL", "Nula", "Clássica", "X11", "SEATS"), selected = "STL"), # incluir: "Clássica", "X-11", "SEATS"
           sliderInput("trendWindow", "Selecione janela de tendência", min = 1, max = 21, step = 1, value = 14),
           sliderInput("seasonWindow", "Selecione janela de sazonalidade", min = 5, max = 21, step = 1, value = 7)
         )
