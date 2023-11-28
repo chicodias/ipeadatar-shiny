@@ -106,19 +106,27 @@ server <- function(input, output, session){
   # Armazena a série em forma de tsibble
   selected_series_ts <- reactive({
     req(input$code)
-    selected_series() |>
+
+    st <- selected_series() |>
       select(!c("uname", "tcode", "code")) |> #  \/ isso daqui é bem tricky haha
-              mutate(#date = current_season_period()(date),
+              mutate(date = current_season_period()(date),
              index = row_number()
              ) |>
-      as_tsibble(index= index)
-          ## INFO: os lapsos na série são imputados com o valor anterior abaixo
-     # fill_gaps() |>
-     # fill(code, value)
+      as_tsibble(index= date)
+
+    if(has_gaps(st) |> any())
+    {
+      showNotification("A série possui lapsos, o que pode influenciar as análises.")
+      ## INFO: os lapsos na série são imputados com o valor anterior abaixo
+      st <- st |> fill_gaps() |>
+        fill(value)
+    }
+
+    st
   })
 
   selected_series_ts_decomp <- reactive({
-    if(is.null(selected_series_ts())) return(NULL)
+    req(selected_series_ts())
 
     ## Decomp STL da série de acordo com janela e parametros
     if(input$decompType == "STL")
@@ -176,7 +184,7 @@ server <- function(input, output, session){
   ## Grafico interativo com as séries selecionadas pelo usuário
   output$seriesPlot <- renderPlotly({
     req(selected_series_ts())
-    plot_ly(data = selected_series_ts(), x = ~date, y = ~value, type = 'scatter', mode = 'lines') %>%
+    plot_ly(data = selected_series_ts(), x = ~as_date(date), y = ~value, type = 'scatter', mode = 'lines') %>%
       layout(
         #title = paste("Series:", selected_series() |> select(code) |> distinct()),
         xaxis = list(title = "Data"),
@@ -209,8 +217,32 @@ server <- function(input, output, session){
 
     if(input$decompType == "Nula")
     {
-        selected_series_ts()  |>
+      ac <- selected_series_ts()  |>
         ACF(value, lag_max=input$lagMax) |>
+        autoplot() |>
+        ggplotly()
+       }
+
+    else
+    {
+      ac <- selected_series_ts_decomp()  |>
+        components() |>
+        ACF(remainder, lag_max=input$lagMax) |>
+        autoplot() |>
+        ggplotly()
+       }
+    ac
+  })
+
+    ## Correlograma parcial
+  output$parCorrPlot <- renderPlotly({
+    req(selected_series_ts_decomp())
+
+    if(input$decompType == "Nula")
+    {
+      selected_series_ts()  |>
+
+        PACF(value, lag_max=input$lagMax) |>
         autoplot() |>
         ggplotly()
     }
@@ -219,7 +251,7 @@ server <- function(input, output, session){
     {
       selected_series_ts_decomp()  |>
         components() |>
-        ACF(remainder, lag_max=input$lagMax) |>
+        PACF(remainder, lag_max=input$lagMax) |>
         autoplot() |>
         ggplotly()
     }

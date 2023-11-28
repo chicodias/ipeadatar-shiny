@@ -24,7 +24,7 @@ modelagemSidebar <- function() {
     h2("Transformações"),
     sliderInput("lambda", "Selecione lambda de box-cox", min = -2, max = 2, step = 0.01, value = 1),
     checkboxInput("bestLambda", "Use lambda ótimo (Guerrero)"),
-    sliderInput("rollMean", "Número de defasagens para a media móvel", min = 0, max = 30, step = 1, value = 0),
+    sliderInput("rollMean", "Número de defasagens para a média móvel", min = 0, max = 30, step = 1, value = 0),
     tableOutput("nameDisplay"),
     downloadButton("downloadData", "Baixar CSV")
   )
@@ -32,49 +32,39 @@ modelagemSidebar <- function() {
 
 modelagemMainPanel <- function() {
   mainPanel(
-    h2("Parâmetros"),
-    helpText("Aqui você pode escolher diferentes parâmetros para as análises"),
-    # Decomposição Tab
-    tabPanel("Decomposição",
-      sidebarLayout(
-        mainPanel(
-          plotlyOutput("stlPlot")
-        ),
-        sidebarPanel(
-          h2("Decomposição"),
-          radioButtons("decompType", "Selecione tipo de decomposição", choices = c("STL", "Nula"), selected = "STL"), # incluir: "Clássica", "X-11", "SEATS"
-          sliderInput("trendWindow", "Selecione janela de tendência", min = 1, max = 21, step = 1, value = 14),
-          sliderInput("seasonWindow", "Selecione janela de sazonalidade", min = 5, max = 21, step = 1, value = 7)
-        )
-      )
-    ),
-    # Correlograma Tab
-    tabPanel("Correlograma",
-      sidebarLayout(
-        mainPanel(
-          plotlyOutput("corrPlot")
-        ),
-        sidebarPanel(
-          h2("Correlograma"),
-          sliderInput("lagMax", "Selecione lagmax do correlograma", min = 0, max = 180, step = 1, value = 30)
-        )
-      )
-    ),
+                                        #    h2("Parâmetros"),
+                                        #    helpText("Aqui você pode escolher diferentes parâmetros para as análises"),
 
-    actionButton("nextButton", "Previsão", class = "btn-primary")
-    ## # Lag Plot Tab
-    ## tabPanel("Lag plot",
-    ##   sidebarLayout(
-    ##     mainPanel(
-    ##       plotOutput("lagPlot")
-    ##     ),
-    ##     sidebarPanel(
-    ##       h2("Lag plot")
-    ##       # Add any additional inputs or controls for the Lag plot here
-    ##     )
-    ##   )
-    ## )
+    tabsetPanel(
+                                        # Correlograma Tab
+      tabPanel("Decomposições",
+               plotlyOutput("stlPlot", width = "65vw", height = "74vh"),
+               h2("Decomposições"),
+               fluidRow(
+                 column(4,
+                        radioButtons("decompType", "Selecione tipo de decomposição", choices = c("STL", "Nula"), selected = "STL"), # incluir: "Clássica", "X-11", "SEATS"
+                        ),
+                 column(4,
+                        sliderInput("trendWindow", "Selecione janela de tendência", min = 1, max = 21, step = 1, value = 12),
+                        ),
 
+                 column(4,
+                        sliderInput("seasonWindow", "Selecione janela de sazonalidade", min = 5, max = 21, step = 1, value = 12),
+                        )
+               ),
+                                        #         actionButton("nextButton", "Previsão", class = "btn-primary")
+
+               ),
+
+                                        # Corrrelogramas Tab
+      tabPanel("Correlogramas",
+               plotlyOutput("corrPlot"),
+               plotlyOutput("parCorrPlot"),
+               h2("Correlogramas"),
+               sliderInput("lagMax", "Defasagem máxima", min = 0, max = 180, step = 1, value = 60),
+
+               )
+    )
   )
 }
 
@@ -99,7 +89,7 @@ previsaoMainPanel <- function() {
 
 ui <- fluidPage(
   tags$head(
-    tags$style(HTML("
+         tags$style(HTML("
      .shiny-spinner-output-container.full-page {
         position: fixed;
         top: 50%;
@@ -107,7 +97,7 @@ ui <- fluidPage(
         transform: translate(-50%, -50%);
       }
     "))
-  ),
+    ),
   add_busy_spinner(spin = "pixel", position = "full-page"),
   tabsetPanel(
     id = "tabs",
