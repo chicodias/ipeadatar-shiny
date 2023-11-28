@@ -141,11 +141,18 @@ server <- function(input, output, session){
     {
       selected_series_ts()
     }
-    else if(input$decompType == "Clássica")
+    else if(input$decompType == "Aditiva")
     {
       selected_series_ts() |>
       model(
         classical_decomposition(value, type="additive")
+      )
+    }
+    else if(input$decompType == "Multiplicativa")
+    {
+      selected_series_ts() |>
+      model(
+        classical_decomposition(value, type="multiplicative")
       )
     }
     else if(input$decompType == "X11")

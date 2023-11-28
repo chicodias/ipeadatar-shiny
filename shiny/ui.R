@@ -39,10 +39,10 @@ modelagemMainPanel <- function() {
                                         # Correlograma Tab
       tabPanel("Decomposições",
                plotlyOutput("stlPlot", width = "65vw", height = "74vh"),
-               h2("Decomposições"),
+#               h2("Decomposições"),
                fluidRow(
                  column(4,
-                        radioButtons("decompType", "Selecione tipo de decomposição", choices = c("STL", "Nula"), selected = "STL"), # incluir: "Clássica", "X-11", "SEATS"
+                        radioButtons("decompType", "Selecione tipo de decomposição", choices = c("STL", "Aditiva", "Multiplicativa", "X11", "SEATS", "Nula"), selected = "STL"),
                         ),
                  column(4,
                         sliderInput("trendWindow", "Selecione janela de tendência", min = 1, max = 21, step = 1, value = 12),
