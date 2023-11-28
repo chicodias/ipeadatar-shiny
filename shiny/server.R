@@ -148,14 +148,14 @@ server <- function(input, output, session){
         classical_decomposition(value, type="additive")
       )
     }
-    else if(inpu$decompType == "X11")
+    else if(input$decompType == "X11")
     {
       selected_series_ts() |>
       model(
         x11 = X_13ARIMA_SEATS(value ~ x11())
       )
     }
-    else if (inpu$decompType == "SEATS")
+    else if (input$decompType == "SEATS")
     {
       selected_series_ts() |>
       model(
