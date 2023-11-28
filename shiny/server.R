@@ -141,7 +141,27 @@ server <- function(input, output, session){
     {
       selected_series_ts()
     }
-    ## TODO decomposicoes diferentes, de acordo com input$decompype
+    else if(input$decompType == "Clássica")
+    {
+      selected_series_ts() |>
+      model(
+        classical_decomposition(value, type="additive")
+      )
+    }
+    else if(inpu$decompType == "X11")
+    {
+      selected_series_ts() |>
+      model(
+        x11 = X_13ARIMA_SEATS(value ~ x11())
+      )
+    }
+    else if (inpu$decompType == "SEATS")
+    {
+      selected_series_ts() |>
+      model(
+        x11 = X_13ARIMA_SEATS(value ~ seats())
+      )
+    }
     else return(NULL)
   })
 
