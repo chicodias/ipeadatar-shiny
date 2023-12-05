@@ -72,7 +72,7 @@ modelagemMainPanel <- function() {
 previsaoSidebar <- function() {
   sidebarPanel(
     numericInput("pred_rng", "Janela de previsão", min = 1, max = 90, value = 8),
-    radioButtons("radio3", h3("Modelo"), choices = list("ARIMA" = 0, "SARIMA" = 1), selected = 0),
+    radioButtons("radio3", h3("Modelo"), choices = list("ARIMA" = 0, "SARIMA" = 1, "NNAR"=2), selected = 0),
     numericInput("minScore", "I.C. Mínimo (%)", min = 60, max = 99, value = 80),
     numericInput("maxScore", "I.C. Máximo (%)", min = 60, max = 99.9, value = 95)
   )

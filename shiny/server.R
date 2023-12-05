@@ -342,16 +342,16 @@ server <- function(input, output, session){
   ## https://github.com/predict-icmc/covid19/blob/cbbae41ed7433df41f384183780cc14f652b1223/shiny/site_final/covid-19/app.R#L394
 
     ## Grafico interativo com as séries selecionadas pelo usuário
-  output$prediction <- renderPlotly({
-    req(selected_series_ts())
+  # output$prediction <- renderPlotly({
+  #   req(selected_series_ts())
 
-    plot_ly(data = selected_series_ts(), x = ~date, y = ~value, type = 'scatter', mode = 'lines') %>%
-      layout(
-        #title = paste("Series:", selected_series() |> select(code) |> distinct()),
-        xaxis = list(title = "Data"),
-        yaxis = list(title = "Valor")
-      )
-  })
+  #   plot_ly(data = selected_series_ts(), x = ~date, y = ~value, type = 'scatter', mode = 'lines') %>%
+  #     layout(
+  #       #title = paste("Series:", selected_series() |> select(code) |> distinct()),
+  #       xaxis = list(title = "Data"),
+  #       yaxis = list(title = "Valor")
+  #     )
+  # })
 
   observeEvent(input$nextButton, {
     updateTabsetPanel(session, "tabs", selected = "pre")
@@ -389,22 +389,23 @@ server <- function(input, output, session){
     if(input$radio3 == 0){ #ARIMA
       fit <- data |>  
         model(auto_arima=ARIMA(value))
-
     } else if(input$radio3 == 1){ # SARIMA
       fit <- data |>  
-        model(auto_arima=ARIMA(value, seasonal=T))
+        model(
+          arima012011 = ARIMA(value ~ pdq(0,1,2) + PDQ(0,1,1)),
+          auto_arima=ARIMA(value)
+        )
+
+    } else if(input$radio3 == 2){
+      fit <- data |>
+        model(NNETAR(value))
     }
-    # intervalos de confiança para a predição
-    # lwr <- input$maxScore
-    # upr <- input$minScore
-    # rng <- input$pred_rng
-    # fit <- data
-    #xreg <- dfit$xreg
 
     tmp = fit |>
       forecast(h=input$pred_rng, PI = T, level = c(input$maxScore/100, input$minScore/100)) |>  #, xreg = xreg$mean)
-      autoplot(data) 
-    # title <- tmp$labels$title
+      autoplot(data) #+
+      # labs(title = "US employment: leisure and hospitality")
+    
     remove_modal_spinner() # remove a barra de carregamento
 
     tmp
