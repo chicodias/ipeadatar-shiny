@@ -390,9 +390,18 @@ server <- function(input, output, session){
       fit <- data |>  
         model(auto_arima=ARIMA(value))
     } else if(input$radio3 == 1){ # SARIMA
+      # print(input$pNonSea)
       fit <- data |>  
         model(
-          arima012011 = ARIMA(value ~ pdq(0,1,2) + PDQ(0,1,1)),
+          arima012011 = ARIMA(value ~ pdq(
+            input$pNonSea,
+            input$dNonSea,
+            input$qNonSea
+          ) + PDQ(
+            input$pSeasonal,
+            input$dSeasonal,
+            input$qSeasonal)
+        ),
           auto_arima=ARIMA(value)
         )
 
