@@ -116,10 +116,10 @@ server <- function(input, output, session){
 
     if(has_gaps(st) |> any())
     {
-      showNotification("A série possui lapsos, o que pode influenciar as análises.")
+      showNotification("A série possui lapsos, algumas decomposições podem não funcionar.")
       ## INFO: os lapsos na série são imputados com o valor anterior abaixo
-      st <- st |> fill_gaps() |>
-        fill(value)
+      st <- st |> fill_gaps() #|>
+#        fill(value)
     }
 
     st
@@ -128,6 +128,7 @@ server <- function(input, output, session){
   selected_series_ts_decomp <- reactive({
     req(selected_series_ts())
 
+    tryCatch({
     ## Decomp STL da série de acordo com janela e parametros
     if(input$decompType == "STL")
     {
@@ -137,10 +138,7 @@ server <- function(input, output, session){
                 season(window = input$seasonWindow),
               robust = T))
     }
-    else if(input$decompType == "Nula")
-    {
-      selected_series_ts()
-    }
+
     else if(input$decompType == "Aditiva")
     {
       selected_series_ts() |>
@@ -170,6 +168,11 @@ server <- function(input, output, session){
       )
     }
     else return(NULL)
+    }, error = function(e) {
+    # Display a notification in case of an error
+      showNotification("Erro decompondo a série. Considere diminuir a janela de tempo ou selecione uma série diferente", type = "error")
+      NULL
+  })
   })
 
  # Calcula o melhor lambda e atualiza o slider
@@ -248,16 +251,33 @@ server <- function(input, output, session){
         ACF(value, lag_max=input$lagMax) |>
         autoplot() |>
         ggplotly()
-       }
-
-    else
+    }
+    else if(input$decompType == "STL")
     {
       ac <- selected_series_ts_decomp()  |>
         components() |>
         ACF(remainder, lag_max=input$lagMax) |>
         autoplot() |>
         ggplotly()
-       }
+    }
+    else if(input$decompType %in% c("X11", "SEATS"))
+    {
+      ac <- selected_series_ts_decomp()  |>
+        components() |>
+        ACF(irregular, lag_max=input$lagMax) |>
+        autoplot() |>
+        ggplotly()
+    }
+    else
+    {
+      ac <- selected_series_ts_decomp()  |>
+        components() |>
+        ACF(random, lag_max=input$lagMax) |>
+        autoplot() |>
+        ggplotly()
+    }
+
+
     ac
   })
 
@@ -265,23 +285,38 @@ server <- function(input, output, session){
   output$parCorrPlot <- renderPlotly({
     req(selected_series_ts_decomp())
 
-    if(input$decompType == "Nula")
+      if(input$decompType == "Nula")
     {
-      selected_series_ts()  |>
-
+      ac <- selected_series_ts()  |>
         PACF(value, lag_max=input$lagMax) |>
         autoplot() |>
         ggplotly()
     }
-
-    else
+    else if(input$decompType == "STL")
     {
-      selected_series_ts_decomp()  |>
+      ac <- selected_series_ts_decomp()  |>
         components() |>
         PACF(remainder, lag_max=input$lagMax) |>
         autoplot() |>
         ggplotly()
     }
+    else if(input$decompType %in% c("X11", "SEATS"))
+    {
+      ac <- selected_series_ts_decomp()  |>
+        components() |>
+        PACF(irregular, lag_max=input$lagMax) |>
+        autoplot() |>
+        ggplotly()
+    }
+    else
+    {
+      ac <- selected_series_ts_decomp()  |>
+        components() |>
+        PACF(random, lag_max=input$lagMax) |>
+        autoplot() |>
+        ggplotly()
+    }
+
 
   })
 
