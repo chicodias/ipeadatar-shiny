@@ -401,12 +401,13 @@ server <- function(input, output, session){
     # fit <- data
     #xreg <- dfit$xreg
 
-    f <- forecast(fit, h=input$pred_rng, PI = T, level = c(input$maxScore/100, input$minScore/100))#, xreg = xreg$mean)
-    tmp <- autoplot(f) 
+    tmp = fit |>
+      forecast(h=input$pred_rng, PI = T, level = c(input$maxScore/100, input$minScore/100)) |>  #, xreg = xreg$mean)
+      autoplot(data) 
     # title <- tmp$labels$title
     remove_modal_spinner() # remove a barra de carregamento
 
-    tmp 
+    tmp
 
   })
 }
