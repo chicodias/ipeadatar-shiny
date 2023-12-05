@@ -362,19 +362,51 @@ server <- function(input, output, session){
   ## })
   ## ## Previsão
   ## # objeto reativo que armazena o modelo utilizado
-  ## dfit <- reactiveValues(data = NULL, xreg = NULL, title = NULL)
+  # dfit <- reactiveValues(data = NULL, xreg = NULL, title = NULL)
+  # forecast_c <- memoise(forecast)
 
   ##   # recebe um modelo e calcula a previsao com a confiança estipulada
-  ## calcula_pred <- reactive({
-  ##   lwr <- input$maxScore
-  ##   upr <- input$minScore
-  ##   rng <- input$pred_rng
-  ##   fit <- dfit$data
-  ##   #xreg <- dfit$xreg
+  # calcula_pred <- reactive({
+  #   lwr <- input$maxScore
+  #   upr <- input$minScore
+  #   rng <- input$pred_rng
+  #   fit <- dfit$data
+  #   #xreg <- dfit$xreg
 
-  ##   f <- forecast_c(fit, 7 * rng, PI = T, level = c(lwr/100, upr/100))#, xreg = xreg$mean)
-  ##   tmp <- autoplot(f)
-  ##   dfit$title <- tmp$labels$title
-  ##   f
-  ## })
+  #   f <- forecast(fit, h=rng, PI = T, level = c(lwr/100, upr/100))#, xreg = xreg$mean)
+  #   tmp <- autoplot(f)
+  #   dfit$title <- tmp$labels$title
+  #   f
+  # })
+
+  # gráfico da previsão
+  output$prediction <- renderPlot({
+    show_modal_spinner(text = "Calculando previsão...")
+    rng <- input$pred_rng
+    data <- selected_series_ts()
+
+    # modelo selecionado
+    if(input$radio3 == 0){ #ARIMA
+      fit <- data |>  
+        model(auto_arima=ARIMA(value))
+
+    } else if(input$radio3 == 1){ # SARIMA
+      fit <- data |>  
+        model(auto_arima=ARIMA(value, seasonal=T))
+    }
+    # intervalos de confiança para a predição
+    # lwr <- input$maxScore
+    # upr <- input$minScore
+    # rng <- input$pred_rng
+    # fit <- data
+    #xreg <- dfit$xreg
+
+    f <- forecast(fit, h=input$pred_rng, PI = T, level = c(input$maxScore/100, input$minScore/100))#, xreg = xreg$mean)
+    tmp <- autoplot(f) 
+    # title <- tmp$labels$title
+    remove_modal_spinner() # remove a barra de carregamento
+
+    tmp 
+
+  })
 }
