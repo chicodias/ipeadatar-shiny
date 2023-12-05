@@ -395,11 +395,11 @@ server <- function(input, output, session){
         model(
           arima012011 = ARIMA(value ~ pdq(
             input$pNonSea,
-            input$dNonSea,
+            1,
             input$qNonSea
           ) + PDQ(
             input$pSeasonal,
-            input$dSeasonal,
+            1,
             input$qSeasonal)
         ),
           auto_arima=ARIMA(value)

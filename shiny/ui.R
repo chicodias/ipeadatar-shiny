@@ -78,11 +78,11 @@ previsaoSidebar <- function() {
     h4("Parametros Sarima"),
     h5("Non-seasonal:"),
     sliderInput("pNonSea", "p", min=0, max=10, value=0),
-    sliderInput("dNonSea", "d", min=0, max=10, value=1),
+    # sliderInput("dNonSea", "d", min=0, max=10, value=1),
     sliderInput("qNonSea", "q", min=0, max=10, value=2),
     h5("Seasonal"),
     sliderInput("pSeasonal", "P", min=0, max=10, value=0),
-    sliderInput("dSeasonal", "D", min=0, max=10, value=1),
+    # sliderInput("dSeasonal", "D", min=0, max=10, value=1),
     sliderInput("qSeasonal", "Q", min=0, max=10, value=1),
   )
 }
