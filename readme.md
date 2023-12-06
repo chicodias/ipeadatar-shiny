@@ -35,6 +35,7 @@ O nosso grupo conduziu [análises estratégicas](./analises/html/index.html) em 
 - [Séries Temporais MP 10-10 - Exportado](./analises/html/SeriesTemporais_MP_10-10-exported.html)
 - [Séries Temporais - Selic](./analises/html/SeriesTemporais_Selic.html)
 - [Taxa de Juros CDI Acumulada no Mês](./analises/html/Taxa_juros_CDI_acumulada_mês-exported.html)
+- [Análise do PIB mensal](./analises/html/PIB.html)
 
 
 Essas análises fornecem insights aprofundados e visualizações claras das tendências e padrões dos indicadores econômicos em estudo, contribuindo para uma compreensão mais robusta desses fenômenos.
