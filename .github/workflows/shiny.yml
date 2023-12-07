@@ -1,5 +1,9 @@
-  # run on any push
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
   push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
   # run on request (via button in actions menu)
   workflow_dispatch:
