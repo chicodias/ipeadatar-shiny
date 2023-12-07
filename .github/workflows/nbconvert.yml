@@ -31,14 +31,17 @@ jobs:
       - name: Convert all ipynb files to html
         run: find . -name '*.ipynb' -type f -execdir jupyter nbconvert --template classic --to html {} \;
 
-
-      - name: Convert rmarkdown files
-        uses: lc5415/rmarkdown-action@v1
-        with:
-          input_file: .Rmd
-	  output_format: html_document
-
-
+      - name: Convert R Markdown files to HTML
+        run: |
+          for file in $(find . -name '*.Rmd'); do
+          echo "Converting $file to HTML"
+          # Call the R Markdown conversion action for each file
+          # This step might need adjustment based on the specifics of the rmarkdown-action
+          docker run --rm \
+          -v $PWD:/github/workspace \
+          lc5415/rmarkdown-action@v1 \
+          /github/workspace/$file
+          done
 
       - name: Push notebooks folder to the build branch
         uses: s0/git-publish-subdir-action@develop
