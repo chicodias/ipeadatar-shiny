@@ -15,6 +15,40 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
+
+  prepare-workflow:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - id: set-matrix
+        run: |
+          echo "Generating matrix for R Markdown files..."
+          RMD_FILES=$(find . -name '*.Rmd')
+          MATRIX_JSON="{\"include\": ["
+          for FILE in $RMD_FILES; do
+            MATRIX_JSON+="{\"rmdfile\": \"$FILE\"},"
+          done
+          MATRIX_JSON=$(echo $MATRIX_JSON | sed 's/,$//')
+          MATRIX_JSON+="]}"
+          echo "MATRIX_JSON=$MATRIX_JSON" >> $GITHUB_ENV
+
+  convert-rmd:
+    needs: prepare-workflow
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{fromJson(env.MATRIX_JSON)}}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Convert R Markdown file
+        uses: lc5415/rmarkdown-action@v1
+        with:
+          input_file: ${{ matrix.rmdfile }}
+
+
   # This workflow contains a single job called "build"
   build:
     # The type of runner that the job will run on
@@ -31,19 +65,7 @@ jobs:
       - name: Convert all ipynb files to html
         run: find . -name '*.ipynb' -type f -execdir jupyter nbconvert --template classic --to html {} \;
 
-      - name: Convert R Markdown files to HTML
-        run: |
-          for file in $(find . -name '*.Rmd'); do
-          echo "Converting $file to HTML"
-          # Call the R Markdown conversion action for each file
-          # This step might need adjustment based on the specifics of the rmarkdown-action
-          docker run --rm \
-          -v $PWD:/github/workspace \
-          lc5415/rmarkdown-action@v1 \
-          /github/workspace/$file
-          done
-
-      - name: Push notebooks folder to the build branch
+        - name: Push notebooks folder to the build branch
         uses: s0/git-publish-subdir-action@develop
         env:
           REPO: self
