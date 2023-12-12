@@ -101,6 +101,9 @@ diagnosticoSidebar <- function(){
     h3("Modelo:"),
     h4(textOutput("modelTitle")),
     htmlOutput("modelReport"),
+    h3("Parâmetros:"),
+    sliderInput("dfTestbox", "G.l.", min = 1, max = 20, step = 1, value = 10),
+
   )
 }
 
@@ -108,6 +111,8 @@ diagnosticoMainPanel <- function(){
   mainPanel(
     h4("Plot de Resíduos:"),
     plotOutput("residuoPlot"),
+    h4("Testes de hipóteses:"),
+    dataTableOutput("testesBox"),
   )
 }
 
