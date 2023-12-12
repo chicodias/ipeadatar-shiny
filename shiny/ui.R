@@ -100,6 +100,7 @@ diagnosticoSidebar <- function(){
     h2("Diagnóstico"),
     h3("Modelo:"),
     h4(textOutput("modelTitle")),
+    htmlOutput("modelReport"),
   )
 }
 

@@ -478,6 +478,13 @@ server <- function(input, output, session){
     fit$title
   })
 
+  output$modelReport <- renderUI({
+    r = capture.output(fabletools::report(fit$model)) 
 
+    HTML(paste(
+      r[4:8], collapse = '<br/>'
+    ))
+      
+  })
 
 }
