@@ -489,10 +489,10 @@ server <- function(input, output, session){
 
   output$testesBox <- renderDataTable({
     boxp <- augment(fit$model) |>
-      features(.innov, box_pierce, lag = 10)
+      features(.innov, box_pierce, lag = input$dfTestbox)
     
     lbox <- augment(fit$model) |>
-      features(.innov, ljung_box, lag = 10)
+      features(.innov, ljung_box, lag = input$dfTestbox)
     
     # se eu quebro linha aki ele buga, n sei pq
     data.frame(teste = c("Box Pierce", "Ljung-Box"),Estatistica = c(boxp$bp_stat, lbox$lb_stat), Pvalor = c(boxp$bp_pvalue, lbox$lb_pvalue))
