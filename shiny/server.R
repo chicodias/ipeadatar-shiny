@@ -413,6 +413,10 @@ server <- function(input, output, session){
   #   dfit$title <- tmp$labels$title
   #   f
   # })
+  fit = reactiveValues(
+    model=NULL,
+    title="",
+  )
 
   # gráfico da previsão
   output$prediction <- renderPlot({
@@ -422,11 +426,13 @@ server <- function(input, output, session){
 
     # modelo selecionado
     if(input$radio3 == 0){ #ARIMA
-      fit <- data |>  
+      fit$title <- "ARIMA"
+      model <- data |>  
         model(auto_arima=ARIMA(value))
     } else if(input$radio3 == 1){ # SARIMA
       # print(input$pNonSea)
-      fit <- data |>  
+      fit$title <- "SARIMA"
+      model <- data |>  
         model(
           arima012011 = ARIMA(value ~ pdq(
             input$pNonSea,
@@ -437,22 +443,41 @@ server <- function(input, output, session){
             1,
             input$qSeasonal)
         ),
-          auto_arima=ARIMA(value)
+          # auto_arima=ARIMA(value)
         )
 
     } else if(input$radio3 == 2){
-      fit <- data |>
+      fit$title <- "NNAR"
+      model <- data |>
         model(NNETAR(value))
     }
 
-    tmp = fit |>
+
+    tmp = model |>
       forecast(h=input$pred_rng, PI = T, level = c(input$maxScore/100, input$minScore/100)) |>  #, xreg = xreg$mean)
       autoplot(data) #+
       # labs(title = "US employment: leisure and hospitality")
     
     remove_modal_spinner() # remove a barra de carregamento
 
+    fit$model = model
+
     tmp
 
   })
+
+  output$residuoPlot <- renderPlot({
+    if(is.null(fit$model)) return (NULL)
+
+    fit$model |>
+      gg_tsresiduals() 
+    
+  })
+
+  output$modelTitle <- renderText({
+    fit$title
+  })
+
+
+
 }

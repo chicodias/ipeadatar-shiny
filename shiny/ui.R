@@ -95,6 +95,20 @@ previsaoMainPanel <- function() {
   )
 }
 
+diagnosticoSidebar <- function(){
+  sidebarPanel(
+    h2("Diagnóstico"),
+    h3("Modelo:"),
+    h4(textOutput("modelTitle")),
+  )
+}
+
+diagnosticoMainPanel <- function(){
+  mainPanel(
+    h4("Plot de Resíduos:"),
+    plotOutput("residuoPlot"),
+  )
+}
 
 ui <- fluidPage(
   tags$head(
@@ -112,6 +126,7 @@ ui <- fluidPage(
     id = "tabs",
     tabPanel("Explorador", value = "exp", sidebarLayout(exploradorSidebar(), exploradorMainPanel())),
     tabPanel("Modelagem", value = "mod", sidebarLayout(modelagemSidebar(), modelagemMainPanel())),
-    tabPanel("Previsão", value = "pre", sidebarLayout(previsaoSidebar(), previsaoMainPanel()))
+    tabPanel("Previsão", value = "pre", sidebarLayout(previsaoSidebar(), previsaoMainPanel())),
+    tabPanel("Diagnóstico", value="diag", sidebarLayout(diagnosticoSidebar(), diagnosticoMainPanel()))
   )
 )
