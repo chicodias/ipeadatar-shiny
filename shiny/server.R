@@ -499,4 +499,8 @@ server <- function(input, output, session){
 
   })
 
+  output$rootPlot <- renderPlot({
+    gg_arma(fit$model)
+  })
+
 }

@@ -113,6 +113,8 @@ diagnosticoMainPanel <- function(){
     plotOutput("residuoPlot"),
     h4("Testes de hipóteses:"),
     dataTableOutput("testesBox"),
+    h4("Raízes características:"),
+    plotOutput("rootPlot"),
   )
 }
 
