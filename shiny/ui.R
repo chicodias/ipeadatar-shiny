@@ -76,14 +76,15 @@ previsaoSidebar <- function() {
     numericInput("minScore", "I.C. Mínimo (%)", min = 60, max = 99, value = 80),
     numericInput("maxScore", "I.C. Máximo (%)", min = 60, max = 99.9, value = 95),
     h4("Parametros Sarima"),
-    h5("Non-seasonal:"),
-    sliderInput("pNonSea", "p", min=0, max=10, value=0),
-    # sliderInput("dNonSea", "d", min=0, max=10, value=1),
-    sliderInput("qNonSea", "q", min=0, max=10, value=2),
-    h5("Seasonal"),
-    sliderInput("pSeasonal", "P", min=0, max=10, value=0),
-    # sliderInput("dSeasonal", "D", min=0, max=10, value=1),
-    sliderInput("qSeasonal", "Q", min=0, max=10, value=1),
+    h5("Componentes não sazonais:"),
+    sliderInput("pNonSea", "Auto regressivo (p)", min=0, max=10, value=0),
+    sliderInput("dNonSea", "Número de diferenciações (d)", min=0, max=10, value=1),
+    sliderInput("qNonSea", "Médias móveis (q)", min=0, max=10, value=2),
+    h5("Componentes Sazonais"),
+    sliderInput("pSeasonal", "Auto regressivo (P)", min=0, max=10, value=0),
+    sliderInput("dSeasonal", "Número de diferenciações (D)", min=0, max=10, value=1),
+    sliderInput("qSeasonal", "Médias móveis (Q)", min=0, max=10, value=1),
+    checkboxInput("autoArima", "")
   )
 }
 

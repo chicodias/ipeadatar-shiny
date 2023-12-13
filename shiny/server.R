@@ -245,6 +245,7 @@ server <- function(input, output, session){
   output$corrPlot <- renderPlotly({
     req(selected_series_ts_decomp())
 
+    browser()
     if(input$decompType == "Nula")
     {
       ac <- selected_series_ts()  |>
@@ -430,11 +431,11 @@ server <- function(input, output, session){
         model(
           arima012011 = ARIMA(value ~ pdq(
             input$pNonSea,
-            1,
+            input$dNonSea,
             input$qNonSea
           ) + PDQ(
             input$pSeasonal,
-            1,
+            input$dSeasonal,
             input$qSeasonal)
         ),
           auto_arima=ARIMA(value)
