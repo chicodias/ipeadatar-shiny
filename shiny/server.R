@@ -414,6 +414,10 @@ server <- function(input, output, session){
   #   dfit$title <- tmp$labels$title
   #   f
   # })
+  fit = reactiveValues(
+    model=NULL,
+    title="",
+  )
 
   # gráfico da previsão
   output$prediction <- renderPlot({
@@ -423,11 +427,13 @@ server <- function(input, output, session){
 
     # modelo selecionado
     if(input$radio3 == 0){ #ARIMA
-      fit <- data |>  
+      fit$title <- "ARIMA"
+      model <- data |>  
         model(auto_arima=ARIMA(value))
     } else if(input$radio3 == 1){ # SARIMA
       # print(input$pNonSea)
-      fit <- data |>  
+      fit$title <- "SARIMA"
+      model <- data |>  
         model(
           arima012011 = ARIMA(value ~ pdq(
             input$pNonSea,
@@ -438,22 +444,64 @@ server <- function(input, output, session){
             input$dSeasonal,
             input$qSeasonal)
         ),
-          auto_arima=ARIMA(value)
+          # auto_arima=ARIMA(value)
         )
 
     } else if(input$radio3 == 2){
-      fit <- data |>
+      fit$title <- "NNAR"
+      model <- data |>
         model(NNETAR(value))
     }
 
-    tmp = fit |>
+
+    tmp = model |>
       forecast(h=input$pred_rng, PI = T, level = c(input$maxScore/100, input$minScore/100)) |>  #, xreg = xreg$mean)
       autoplot(data) #+
       # labs(title = "US employment: leisure and hospitality")
     
     remove_modal_spinner() # remove a barra de carregamento
 
+    fit$model = model
+
     tmp
 
   })
+
+  output$residuoPlot <- renderPlot({
+    if(is.null(fit$model)) return (NULL)
+
+    fit$model |>
+      gg_tsresiduals() 
+    
+  })
+
+  output$modelTitle <- renderText({
+    fit$title
+  })
+
+  output$modelReport <- renderUI({
+    r = capture.output(fabletools::report(fit$model)) 
+
+    HTML(paste(
+      r[4:8], collapse = '<br/>'
+    ))
+      
+  })
+
+  output$testesBox <- renderDataTable({
+    boxp <- augment(fit$model) |>
+      features(.innov, box_pierce, lag = input$dfTestbox)
+    
+    lbox <- augment(fit$model) |>
+      features(.innov, ljung_box, lag = input$dfTestbox)
+    
+    # se eu quebro linha aki ele buga, n sei pq
+    data.frame(teste = c("Box Pierce", "Ljung-Box"),Estatistica = c(boxp$bp_stat, lbox$lb_stat), Pvalor = c(boxp$bp_pvalue, lbox$lb_pvalue))
+
+  })
+
+  output$rootPlot <- renderPlot({
+    gg_arma(fit$model)
+  })
+
 }

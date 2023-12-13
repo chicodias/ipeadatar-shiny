@@ -96,6 +96,28 @@ previsaoMainPanel <- function() {
   )
 }
 
+diagnosticoSidebar <- function(){
+  sidebarPanel(
+    h2("Diagnóstico"),
+    h3("Modelo:"),
+    h4(textOutput("modelTitle")),
+    htmlOutput("modelReport"),
+    h3("Parâmetros:"),
+    sliderInput("dfTestbox", "G.l.", min = 1, max = 20, step = 1, value = 10),
+
+  )
+}
+
+diagnosticoMainPanel <- function(){
+  mainPanel(
+    h4("Plot de Resíduos:"),
+    plotOutput("residuoPlot"),
+    h4("Testes de hipóteses:"),
+    dataTableOutput("testesBox"),
+    h4("Raízes características:"),
+    plotOutput("rootPlot"),
+  )
+}
 
 ui <- fluidPage(
   tags$head(
@@ -113,6 +135,7 @@ ui <- fluidPage(
     id = "tabs",
     tabPanel("Explorador", value = "exp", sidebarLayout(exploradorSidebar(), exploradorMainPanel())),
     tabPanel("Modelagem", value = "mod", sidebarLayout(modelagemSidebar(), modelagemMainPanel())),
-    tabPanel("Previsão", value = "pre", sidebarLayout(previsaoSidebar(), previsaoMainPanel()))
+    tabPanel("Previsão", value = "pre", sidebarLayout(previsaoSidebar(), previsaoMainPanel())),
+    tabPanel("Diagnóstico", value="diag", sidebarLayout(diagnosticoSidebar(), diagnosticoMainPanel()))
   )
 )
