@@ -245,7 +245,6 @@ server <- function(input, output, session){
   output$corrPlot <- renderPlotly({
     req(selected_series_ts_decomp())
 
-    browser()
     if(input$decompType == "Nula")
     {
       ac <- selected_series_ts()  |>
