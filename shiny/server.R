@@ -503,4 +503,33 @@ server <- function(input, output, session){
     gg_arma(fit$model)
   })
 
+  selected_series_ts_diff <- reactiveValues(
+    st = NULL
+  )
+
+  output$corrDiffPlot <- renderPlotly({
+    aux <- NULL
+    st <- selected_series_ts()
+    for(i in 1:input$degreeDiff){
+      if(i==1){
+        aux <- difference(st$value)    
+      }else{
+        aux <- difference(aux)
+      }
+    }
+    st$value = aux
+    selected_series_ts_diff$st = st 
+    selected_series_ts_diff |>
+      ACF() |>
+      autoplot() |>
+      ggplotly()
+
+  })
+
+  output$corrDiffTable <- renderDataTable({
+    lb <- ljung_box((selected_series_ts_diff$st)$value, lag=10)
+    data.frame(param=c("lb_stat", "lb_pvalue"), value=c(lb$lb_stat, lb$lb_pvalue))
+  })
+
+
 }
