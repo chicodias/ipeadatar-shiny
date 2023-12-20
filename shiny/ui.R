@@ -64,10 +64,11 @@ modelagemMainPanel <- function() {
                sliderInput("lagMax", "Defasagem máxima", min = 0, max = 180, step = 1, value = 60),
 
                ),
-      tabPanel("Estacionariedade",
+      tabPanel("Diferenciações",
+               plotlyOutput("diffPlot"),
               plotlyOutput("corrDiffPlot"),
               # h2("Grau de diferenciação"),
-              sliderInput("degreeDiff", "Grau de diferenciação", min = 1, max = 6, step = 1, value = 1),
+              sliderInput("degreeDiff", "Grau de diferenciação", min = 0, max = 6, step = 1, value = 0),
               dataTableOutput("corrDiffTable"),
 
 

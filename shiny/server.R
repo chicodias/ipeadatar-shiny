@@ -487,15 +487,16 @@ server <- function(input, output, session){
       
   })
 
-  output$testesBox <- renderDataTable({
+  output$testesBox <- DT::renderDataTable({
     boxp <- augment(fit$model) |>
       features(.innov, box_pierce, lag = input$dfTestbox)
     
     lbox <- augment(fit$model) |>
       features(.innov, ljung_box, lag = input$dfTestbox)
     
-    # se eu quebro linha aki ele buga, n sei pq
-    data.frame(teste = c("Box Pierce", "Ljung-Box"),Estatistica = c(boxp$bp_stat, lbox$lb_stat), Pvalor = c(boxp$bp_pvalue, lbox$lb_pvalue))
+    tibble(teste = c("Box Pierce", "Ljung-Box"),
+           Estatistica = c(boxp$bp_stat, lbox$lb_stat),
+           Pvalor = c(boxp$bp_pvalue, lbox$lb_pvalue))
 
   })
 
@@ -503,32 +504,40 @@ server <- function(input, output, session){
     gg_arma(fit$model)
   })
 
-  selected_series_ts_diff <- reactiveValues(
-    st = NULL
-  )
+  selected_series_ts_diff <- reactive({
+    if(is.null(selected_series_ts())) return(NULL)
+
+    st <- selected_series_ts()
+    aux <- Reduce(function(x, y) difference(x), rep(1, input$degreeDiff), init=st$value, accumulate=FALSE)
+
+    tibble(index = 1:length(aux), value = aux) |>
+      as_tsibble(index = index)
+  })
 
   output$corrDiffPlot <- renderPlotly({
-    aux <- NULL
-    st <- selected_series_ts()
-    for(i in 1:input$degreeDiff){
-      if(i==1){
-        aux <- difference(st$value)    
-      }else{
-        aux <- difference(aux)
-      }
-    }
-    st$value = aux
-    selected_series_ts_diff$st = st 
-    selected_series_ts_diff |>
-      ACF() |>
+
+    selected_series_ts_diff() |>
+      ACF(value) |>
       autoplot() |>
       ggplotly()
 
   })
 
-  output$corrDiffTable <- renderDataTable({
-    lb <- ljung_box((selected_series_ts_diff$st)$value, lag=10)
-    data.frame(param=c("lb_stat", "lb_pvalue"), value=c(lb$lb_stat, lb$lb_pvalue))
+  output$diffPlot <- renderPlotly({
+
+    selected_series_ts_diff() |>
+      autoplot() |>
+      ggplotly()
+
+  })
+
+
+  output$corrDiffTable <- DT::renderDataTable({
+    lb <- selected_series_ts_diff() |> features(value, ljung_box)
+    lc <-  selected_series_ts_diff() |> features(value, unitroot_ndiffs)
+    tibble("Parâmetro"=c("Estatística de Ljung-Box", "Valor p", "Numero de difs necessárias"),
+           Valor=c(lb$lb_stat, lb$lb_pvalue, lc$ndiffs)
+           )
   })
 
 
