@@ -1,9 +1,10 @@
+
 exploradorSidebar <- function() {
   sidebarPanel(
     helpText("Aqui você pode escolher entre as bases disponíveis no pacote IpeaDataR"),
     textOutput("nSeries"),
     selectizeInput("code", "Escolha a(s) série(s):", choices = NULL, multiple = TRUE),
-    pickerInput("freq", "Frequência", choices = c("Mensal", "Anual", "Diária"), selected =  c("Mensal", "Anual", "Diária"), options = list(`actions-box` = TRUE), multiple = TRUE),
+    pickerInput("freq", "Frequência", choices = c("Mensal", "Anual", "Diária"), selected =  "Mensal", options = list(`actions-box` = TRUE), multiple = TRUE),
     pickerInput("theme", "Tema", choices = unique(datasets$theme), selected = unique(datasets$theme), multiple = TRUE),
     pickerInput("source", "Fonte", choices = unique(datasets$source), selected = unique(datasets$source), multiple = TRUE, options = list(`actions-box` = TRUE)),
     pickerInput("status", "Status", choices = c("Ativa", "Inativa"), selected = c("Ativa", "Inativa"), multiple = TRUE)
@@ -42,7 +43,7 @@ modelagemMainPanel <- function() {
 #               h2("Decomposições"),
                fluidRow(
                  column(4,
-                        radioButtons("decompType", "Selecione tipo de decomposição", choices = c("STL", "Aditiva", "Multiplicativa", "X11", "SEATS", "Nula"), selected = "Aditiva"),
+                        radioButtons("decompType", "Selecione tipo de decomposição", choices = c("STL", "Aditiva", "Multiplicativa", "X11", "SEATS", "Nula"), selected = "STL"),
                         ),
                  column(4,
                         sliderInput("trendWindow", "Selecione janela de tendência", min = 1, max = 21, step = 1, value = 12),
@@ -65,11 +66,22 @@ modelagemMainPanel <- function() {
 
                ),
       tabPanel("Diferenciações",
-               plotlyOutput("diffPlot"),
-              plotlyOutput("corrDiffPlot"),
-              # h2("Grau de diferenciação"),
-              sliderInput("degreeDiff", "Grau de diferenciação", min = 0, max = 6, step = 1, value = 0),
-              dataTableOutput("corrDiffTable"),
+               fluidRow(
+                 column(8,
+                        plotlyOutput("corrDiffPlot"),
+                        ),
+                 column(4,
+                        plotlyOutput("diffPlot"),
+                        )
+               ),
+              fluidRow(
+                 column(3,
+                        sliderInput("degreeDiff", "Grau de diferenciação", min = 0, max = 6, step = 1, value = 0),
+                        ),
+                 column(9,
+                        dataTableOutput("corrDiffTable")
+                        )
+               )
 
 
       )
@@ -91,7 +103,7 @@ previsaoSidebar <- function() {
 previsaoMainPanel <- function() {
   mainPanel(
     h4(textOutput("title")),
-    plotlyOutput("prediction")
+    plotlyOutput("prediction", height = '92vh', width = 'auto')
   )
 }
 
@@ -103,13 +115,13 @@ diagnosticoSidebar <- function(){
     radioButtons("radio3", h3("Modelo"), choices = list("ARIMA" = 0, "SARIMA" = 1, "NNAR"=2), selected = 0),
     h4("Parametros Sarima"),
     h5("Componentes não sazonais:"),
-    sliderInput("pNonSea", "Auto regressivo (p)", min=0, max=10, value=0),
+    sliderInput("pNonSea", "Auto regressivo (p)", min=0, max=12, value=0),
     sliderInput("dNonSea", "Número de diferenciações (d)", min=0, max=10, value=1),
-    sliderInput("qNonSea", "Médias móveis (q)", min=0, max=10, value=2),
+    sliderInput("qNonSea", "Médias móveis (q)", min=0, max=12, value=2),
     h5("Componentes Sazonais"),
-    sliderInput("pSeasonal", "Auto regressivo (P)", min=0, max=10, value=0),
+    sliderInput("pSeasonal", "Auto regressivo (P)", min=0, max=12, value=0),
     sliderInput("dSeasonal", "Número de diferenciações (D)", min=0, max=10, value=1),
-    sliderInput("qSeasonal", "Médias móveis (Q)", min=0, max=10, value=1),
+    sliderInput("qSeasonal", "Médias móveis (Q)", min=0, max=12, value=1),
     checkboxInput("autoArima", "Automatico"),
     h3("Parâmetros:"),
     sliderInput("dfTestbox", "G.l.", min = 1, max = 20, step = 1, value = 10),
@@ -120,11 +132,17 @@ diagnosticoSidebar <- function(){
 diagnosticoMainPanel <- function(){
   mainPanel(
     h4("Plot de Resíduos:"),
-    plotOutput("residuoPlot"),
-    h4("Testes de hipóteses:"),
-    dataTableOutput("testesBox"),
-    h4("Raízes características:"),
-    plotOutput("rootPlot"),
+    plotOutput("residuoPlot",height = '50vh', width = 'auto'),
+    fluidRow(
+      column(5,
+             h4("Raízes características:"),
+             plotOutput("rootPlot")
+            ),
+      column(7,
+             h4("Testes de hipóteses:"),
+             dataTableOutput("testesBox")
+             )
+      )
   )
 }
 

@@ -373,21 +373,6 @@ server <- function(input, output, session){
 
   })
   ## Modelagem
-  ## TODO: modelos arima e sarima reaproveitar o código em
-  ## https://github.com/predict-icmc/covid19/blob/cbbae41ed7433df41f384183780cc14f652b1223/shiny/site_final/covid-19/app.R#L394
-
-    ## Grafico interativo com as séries selecionadas pelo usuário
-  # output$prediction <- renderPlotly({
-  #   req(selected_series_ts())
-
-  #   plot_ly(data = selected_series_ts(), x = ~date, y = ~value, type = 'scatter', mode = 'lines') %>%
-  #     layout(
-  #       #title = paste("Series:", selected_series() |> select(code) |> distinct()),
-  #       xaxis = list(title = "Data"),
-  #       yaxis = list(title = "Valor")
-  #     )
-  # })
-
   observeEvent(input$nextButton, {
     updateTabsetPanel(session, "tabs", selected = "pre")
   })
@@ -396,29 +381,36 @@ server <- function(input, output, session){
 
     req(selected_series_ts())
     rng <- input$pred_rng
-    data <- selected_series_ts()
+
+    p1 <- input$pNonSea
+    d1 <- input$dNonSea
+    q1 <- input$qNonSea
+
+    p2 <- input$pSeasonal
+    d2 <- input$dSeasonal
+    q2 <- input$qSeasonal
+
+  data <- selected_series_ts()
+
+  if(input$autoArima)
+    return(data |> model (mdl = ARIMA(value)))
 
     # modelo selecionado
     if(input$radio3 == 0){ #ARIMA
       #fit$title <- "ARIMA"
       model <- data |>  
-        model(auto_arima=ARIMA(value))
+        model(mdl =
+                ARIMA(value ~
+                        pdq(p1, d1, q1)))
+
     } else if(input$radio3 == 1){ # SARIMA
       # print(input$pNonSea)
       #fit$title <- "SARIMA"
       model <- data |>  
         model(
-          arima012011 = ARIMA(value ~ pdq(
-            input$pNonSea,
-            input$dNonSea,
-            input$qNonSea
-          ) + PDQ(
-            input$pSeasonal,
-            input$dSeasonal,
-            input$qSeasonal)
-        ),
-          # auto_arima=ARIMA(value)
-        )
+          mdl = ARIMA(value ~
+                        pdq(p1, d1, q1) +
+                        PDQ(p2, d2, q2)))
 
     } else if(input$radio3 == 2){
       #fit$title <- "NNAR"
@@ -488,7 +480,7 @@ server <- function(input, output, session){
       )
       data <- list( trace2, trace3, trace4)
       layout <- list(
-        title = "PREVISÃO",
+        title = paste0("PREVISÃO - ", series_data()$name ),
         xaxis = list(
           # title = "Data",
           domain = range(selected_series_ts()$date)
