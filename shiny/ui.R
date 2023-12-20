@@ -42,7 +42,7 @@ modelagemMainPanel <- function() {
 #               h2("Decomposições"),
                fluidRow(
                  column(4,
-                        radioButtons("decompType", "Selecione tipo de decomposição", choices = c("STL", "Aditiva", "Multiplicativa", "X11", "SEATS", "Nula"), selected = "STL"),
+                        radioButtons("decompType", "Selecione tipo de decomposição", choices = c("STL", "Aditiva", "Multiplicativa", "X11", "SEATS", "Nula"), selected = "Aditiva"),
                         ),
                  column(4,
                         sliderInput("trendWindow", "Selecione janela de tendência", min = 1, max = 21, step = 1, value = 12),
@@ -80,10 +80,27 @@ modelagemMainPanel <- function() {
 
 previsaoSidebar <- function() {
   sidebarPanel(
+    htmlOutput("modelReport"),
     numericInput("pred_rng", "Janela de previsão", min = 1, max = 90, value = 8),
-    radioButtons("radio3", h3("Modelo"), choices = list("ARIMA" = 0, "SARIMA" = 1, "NNAR"=2), selected = 0),
     numericInput("minScore", "I.C. Mínimo (%)", min = 60, max = 99, value = 80),
     numericInput("maxScore", "I.C. Máximo (%)", min = 60, max = 99.9, value = 95),
+  )
+}
+
+
+previsaoMainPanel <- function() {
+  mainPanel(
+    h4(textOutput("title")),
+    plotlyOutput("prediction")
+  )
+}
+
+diagnosticoSidebar <- function(){
+  sidebarPanel(
+#    h2("h3"),
+    ## h3("Modelo:"),
+#    h4(textOutput("modelTitle")),
+    radioButtons("radio3", h3("Modelo"), choices = list("ARIMA" = 0, "SARIMA" = 1, "NNAR"=2), selected = 0),
     h4("Parametros Sarima"),
     h5("Componentes não sazonais:"),
     sliderInput("pNonSea", "Auto regressivo (p)", min=0, max=10, value=0),
@@ -93,24 +110,7 @@ previsaoSidebar <- function() {
     sliderInput("pSeasonal", "Auto regressivo (P)", min=0, max=10, value=0),
     sliderInput("dSeasonal", "Número de diferenciações (D)", min=0, max=10, value=1),
     sliderInput("qSeasonal", "Médias móveis (Q)", min=0, max=10, value=1),
-    checkboxInput("autoArima", "")
-  )
-}
-
-
-previsaoMainPanel <- function() {
-  mainPanel(
-    h4(textOutput("title")),
-    plotOutput("prediction")
-  )
-}
-
-diagnosticoSidebar <- function(){
-  sidebarPanel(
-    h2("Diagnóstico"),
-    h3("Modelo:"),
-    h4(textOutput("modelTitle")),
-    htmlOutput("modelReport"),
+    checkboxInput("autoArima", "Automatico"),
     h3("Parâmetros:"),
     sliderInput("dfTestbox", "G.l.", min = 1, max = 20, step = 1, value = 10),
 
@@ -144,7 +144,7 @@ ui <- fluidPage(
     id = "tabs",
     tabPanel("Explorador", value = "exp", sidebarLayout(exploradorSidebar(), exploradorMainPanel())),
     tabPanel("Modelagem", value = "mod", sidebarLayout(modelagemSidebar(), modelagemMainPanel())),
+    tabPanel("Diagnóstico", value="diag", sidebarLayout(diagnosticoSidebar(), diagnosticoMainPanel())),
     tabPanel("Previsão", value = "pre", sidebarLayout(previsaoSidebar(), previsaoMainPanel())),
-    tabPanel("Diagnóstico", value="diag", sidebarLayout(diagnosticoSidebar(), diagnosticoMainPanel()))
   )
 )

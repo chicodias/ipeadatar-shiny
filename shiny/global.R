@@ -1,4 +1,6 @@
 # Load necessary libraries
+library(urca)
+library(fable)
 library(shiny)
 library(ipeadatar)
 library(tidyverse)

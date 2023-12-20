@@ -392,46 +392,20 @@ server <- function(input, output, session){
     updateTabsetPanel(session, "tabs", selected = "pre")
   })
 
-  ## output$title <- renderText({
-  ##   dfit$title
-  ## })
-  ## ## Previsão
-  ## # objeto reativo que armazena o modelo utilizado
-  # dfit <- reactiveValues(data = NULL, xreg = NULL, title = NULL)
-  # forecast_c <- memoise(forecast)
+  fitted_model <- reactive({
 
-  ##   # recebe um modelo e calcula a previsao com a confiança estipulada
-  # calcula_pred <- reactive({
-  #   lwr <- input$maxScore
-  #   upr <- input$minScore
-  #   rng <- input$pred_rng
-  #   fit <- dfit$data
-  #   #xreg <- dfit$xreg
-
-  #   f <- forecast(fit, h=rng, PI = T, level = c(lwr/100, upr/100))#, xreg = xreg$mean)
-  #   tmp <- autoplot(f)
-  #   dfit$title <- tmp$labels$title
-  #   f
-  # })
-  fit = reactiveValues(
-    model=NULL,
-    title="",
-  )
-
-  # gráfico da previsão
-  output$prediction <- renderPlot({
-    show_modal_spinner(text = "Calculando previsão...")
+    req(selected_series_ts())
     rng <- input$pred_rng
     data <- selected_series_ts()
 
     # modelo selecionado
     if(input$radio3 == 0){ #ARIMA
-      fit$title <- "ARIMA"
+      #fit$title <- "ARIMA"
       model <- data |>  
         model(auto_arima=ARIMA(value))
     } else if(input$radio3 == 1){ # SARIMA
       # print(input$pNonSea)
-      fit$title <- "SARIMA"
+      #fit$title <- "SARIMA"
       model <- data |>  
         model(
           arima012011 = ARIMA(value ~ pdq(
@@ -447,61 +421,138 @@ server <- function(input, output, session){
         )
 
     } else if(input$radio3 == 2){
-      fit$title <- "NNAR"
+      #fit$title <- "NNAR"
       model <- data |>
         model(NNETAR(value))
     }
+    model
+  })
 
 
-    tmp = model |>
-      forecast(h=input$pred_rng, PI = T, level = c(input$maxScore/100, input$minScore/100)) |>  #, xreg = xreg$mean)
-      autoplot(data) #+
-      # labs(title = "US employment: leisure and hospitality")
-    
-    remove_modal_spinner() # remove a barra de carregamento
+  # gráfico da previsão
+  output$prediction <- renderPlotly({
 
-    fit$model = model
+    if(is.null(fitted_model())) return(NULL)
 
-    tmp
+    pred <- fitted_model() |>
+      forecast(h=input$pred_rng, PI = T, level = c(input$maxScore/100, input$minScore/100)) |>
+      mutate(upper1 = quantile(value,  1- (1- input$minScore/100)/2),
+             lower1 = quantile(value,  (1- input$minScore/100)/2),
+             upper2 = quantile(value,  1- (1- input$maxScore/100)/2),
+             lower2 = quantile(value,  (1- input$maxScore/100)/2)
+             )
+
+      trace2 <- list(
+        fill = "toself",
+        line = list(
+          color = "rgba(242,242,242,1)",
+          fillcolor = "rgba(242,242,242,1)"
+        ),
+        mode = "lines",
+        name = paste0("Previsão com ",input$maxScore,"% de confiança)"),
+        type = "scatter",
+        x = c(pred$date, rev(pred$date)),
+        y = round(c(pred$upper2, rev(pred$lower2))),
+        xaxis = "x",
+        yaxis = "y",
+        hoveron = "points"
+      )
+      trace3 <- list(
+        fill = "toself",
+        line = list(
+          color = "rgba(204,204,204,1)",
+          fillcolor = "rgba(204,204,204,1)"
+        ),
+        mode = "lines",
+        name = paste0("Previsão com ",input$minScore,"% de confiança)"),
+        type = "scatter",
+        x = c(pred$date, rev(pred$date)),
+        y = round(c(pred$upper1, rev(pred$lower1))),
+        xaxis = "x",
+        yaxis = "y",
+        hoveron = "points"
+      )
+      trace4 <- list(
+        line = list(
+          dash = 3,
+          color = "rgba(0,0,255,1)",
+          fillcolor = "rgba(0,0,255,1)"
+        ),
+        mode = "lines",
+        name = paste0("previsão média"),
+        type = "scatter",
+        x = pred$date,
+        y = round(pred$.mean),
+        xaxis = "x",
+        yaxis = "y"
+      )
+      data <- list( trace2, trace3, trace4)
+      layout <- list(
+        title = "PREVISÃO",
+        xaxis = list(
+          # title = "Data",
+          domain = range(selected_series_ts()$date)
+        ),
+        yaxis = list(
+          title = paste0("Valor"),
+          domain = c(0, 1)
+        ),
+        margin = list(
+          b = 40,
+          l = 60,
+          r = 10,
+          t = 25
+        )
+      )
+      p <- plot_ly()
+      p <- add_trace(p, fill = trace2$fill, line = trace2$line, mode = trace2$mode, name = trace2$name, type = trace2$type, x = trace2$x, y = trace2$y, xaxis = trace2$xaxis, yaxis = trace2$yaxis, hoveron = trace2$hoveron)
+      p <- add_trace(p, fill = trace3$fill, line = trace3$line, mode = trace3$mode, name = trace3$name, type = trace3$type, x = trace3$x, y = trace3$y, xaxis = trace3$xaxis, yaxis = trace3$yaxis, hoveron = trace3$hoveron)
+      p <- add_trace(p, line = trace4$line, mode = trace4$mode, name = trace4$name, type = trace4$type, x = trace4$x, y = trace4$y, xaxis = trace4$xaxis, yaxis = trace4$yaxis)
+      p %>% add_lines(x = ~date, y = ~ value)
+      p <- layout(p, title = layout$title, xaxis = layout$xaxis, yaxis = layout$yaxis, margin = layout$margin, legend = list(orientation = "h"))
+      p %>% add_lines(y = selected_series_ts()$value, x = selected_series_ts()$date)
+
 
   })
 
   output$residuoPlot <- renderPlot({
-    if(is.null(fit$model)) return (NULL)
+    if(is.null(fitted_model())) return (NULL)
 
-    fit$model |>
+    fitted_model() |>
       gg_tsresiduals() 
     
   })
 
-  output$modelTitle <- renderText({
-    fit$title
-  })
+  ## output$modelTitle <- renderText({
+  ##   fit$title
+  ## })
 
   output$modelReport <- renderUI({
-    r = capture.output(fabletools::report(fit$model)) 
+    r = capture.output(fabletools::report(fitted_model()))
 
     HTML(paste(
-      r[4:8], collapse = '<br/>'
+      r, sep = '<br/>', collapse = '<br/>'
     ))
       
   })
 
   output$testesBox <- DT::renderDataTable({
-    boxp <- augment(fit$model) |>
+    boxp <- augment(fitted_model()) |>
       features(.innov, box_pierce, lag = input$dfTestbox)
     
-    lbox <- augment(fit$model) |>
+    lbox <- augment(fitted_model()) |>
       features(.innov, ljung_box, lag = input$dfTestbox)
-    
-    tibble(teste = c("Box Pierce", "Ljung-Box"),
-           Estatistica = c(boxp$bp_stat, lbox$lb_stat),
-           Pvalor = c(boxp$bp_pvalue, lbox$lb_pvalue))
+
+    shapiro <- residuals(fitted_model())$.resid |> shapiro.test()
+
+    tibble(teste = c("Box Pierce", "Ljung-Box", "Shapiro-Wilk (resíduos)"),
+           Estatistica = c(boxp$bp_stat, lbox$lb_stat, shapiro$statistic),
+           Pvalor = c(boxp$bp_pvalue, lbox$lb_pvalue, shapiro$p.value))
 
   })
 
   output$rootPlot <- renderPlot({
-    gg_arma(fit$model)
+    gg_arma(fitted_model())
   })
 
   selected_series_ts_diff <- reactive({
