@@ -63,7 +63,16 @@ modelagemMainPanel <- function() {
                h2("Correlogramas"),
                sliderInput("lagMax", "Defasagem máxima", min = 0, max = 180, step = 1, value = 60),
 
-               )
+               ),
+      tabPanel("Diferenciações",
+               plotlyOutput("diffPlot"),
+              plotlyOutput("corrDiffPlot"),
+              # h2("Grau de diferenciação"),
+              sliderInput("degreeDiff", "Grau de diferenciação", min = 0, max = 6, step = 1, value = 0),
+              dataTableOutput("corrDiffTable"),
+
+
+      )
     )
   )
 }
