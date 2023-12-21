@@ -1,55 +1,44 @@
-# Exploração Interativa do Ipeadata
+# Exploração Interativa de Séries Temporais do Ipeadata
 
-Este projeto oferece uma plataforma interativa para explorar várias séries disponíveis no Ipeadata usando R e Shiny. Os usuários podem selecionar diferentes séries e visualizá-las ao longo do tempo.
+Este repositório é o lar de uma plataforma interativa projetada para a exploração, análise e modelagem preditiva de séries temporais, utilizando os ricos conjuntos de dados disponibilizados pelo Ipeadata. A plataforma, construída com R e Shiny, permite aos usuários realizar análises estatísticas aprofundadas e previsões avançadas com interfaces intuitivas e visualizações dinâmicas.
+
+![Exemplo da aplicação](example.jpeg)
 
 ## Funcionalidades
 
-- Selecione entre várias séries disponíveis no Ipeadata.
-- Gráfico interativo para visualizar a série selecionada.
-- Construído com R usando Shiny para a interface web e ggplot2 para visualização.
+- **Seleção e Visualização de Séries Temporais:** Escolha entre uma variedade de séries disponíveis no Ipeadata e visualize tendências e padrões ao longo do tempo.
+- **Modelagem Preditiva Avançada:** Implemente modelos ARIMA, SARIMA e NNAR para previsões confiáveis e precisas.
+- **Diagnóstico de Modelos:** Avalie a adequação dos modelos com ferramentas de diagnóstico integradas.
+- **Interatividade Aprimorada:** Interaja com gráficos avançados e dinâmicos usando a biblioteca Plotly.
+- **Documentação Extensa:** Acesse uma documentação detalhada para maximizar o uso da plataforma.
 
-## Exemplo
+## Documentação
 
-Um deploy está disponível em [https://chicodias.shinyapps.io/SeriesTemporais/](https://chicodias.shinyapps.io/SeriesTemporais/).
-Aqui está um exemplo da tela inicial da aplicação:
+Uma documentação completa e detalhada está disponível em [Ipeadatar-shiny-docs](https://chicodias.github.io/ipeadatar-shiny-docs), providenciando instruções claras e exemplos práticos para usuários de todos os níveis de habilidade.
 
-![Gráfico de Exemplo](example.jpeg)
+## Demonstração Online
 
-Mais funcionalidades serão adicionadas no decorrer deste semestre.
+Experimente a plataforma ao vivo através do deploy disponível em [Shinyapps.io](https://chicodias.shinyapps.io/SeriesTemporais/).
 
-## Como Utilizar
+## Execução Local
 
-1. Instale os pacotes R necessários: shiny, ipeadatar, ggplot2.
-2. Execute o arquivo `app.R` no R ou RStudio para lançar o aplicativo Shiny.
-3. Selecione uma série no menu suspenso para visualizá-la.
+Para executar localmente:
 
-## Análises 
+1. Instale os pacotes R necessários, listados em `shiny/global.R`.
+2. Dentro do R ou RStudio, navegue até o diretório do projeto e use o comando `shiny::runApp()` para iniciar o aplicativo Shiny.
 
-O nosso grupo conduziu [análises estratégicas](./analises/html/index.html) em conjuntos de dados selecionados devido à sua relevância e impacto potencial. Estas análises foram realizadas usando as linguagens em R e Python e estão disponíveis em formato HTML. Você pode encontrar os documentos completos na pasta `/analises/html` ou acessar cada um diretamente pelos links abaixo:
+## Análises Estratégicas
 
+Realizamos análises aprofundadas em conjuntos de dados selecionados, que estão documentadas em notebooks R e Python na pasta `/analises/`. Estas análises abordam questões significativas e oferecem insights valiosos.
 
-- [Análise INPC](./analises/html/INPC_(sem_comentário).html)
-- [Análise IPCA](./analises/html/IPCA_ST.html)
-- [IPC - Exportado](./analises/html/IPC-exported.html)
-- [Séries Temporais - Análise Geral](./analises/html/SeriesTemporais.html)
-- [Séries Temporais MP 10-10 - Exportado](./analises/html/SeriesTemporais_MP_10-10-exported.html)
-- [Séries Temporais - Selic](./analises/html/SeriesTemporais_Selic.html)
-- [Taxa de Juros CDI Acumulada no Mês](./analises/html/Taxa_juros_CDI_acumulada_mês-exported.html)
-- [Análise do PIB mensal](./analises/html/PIB.html)
+# Contribuições
 
-
-Essas análises fornecem insights aprofundados e visualizações claras das tendências e padrões dos indicadores econômicos em estudo, contribuindo para uma compreensão mais robusta desses fenômenos.
-
-
-### Contribuições
-
-Encorajamos a comunidade a explorar esses recursos e contribuir com insights. Se você tiver interesse em contribuir com este projeto, seja expandindo nossas análises, corrigindo erros, ou adicionando novas funcionalidades, por favor, sinta-se à vontade para abrir uma issue ou enviar um pull request.
-
+Contribuições são muito bem-vindas! Se desejar melhorar nossa plataforma ou análises, não hesite em abrir uma issue ou enviar um pull request.
 
 ## Licença
 
-Este projeto é de código aberto e está disponível sob a Licença MIT. Veja o arquivo LICENSE para mais detalhes.
+Este projeto é de código aberto, licenciado sob a MIT License. Consulte o arquivo [LICENSE](LICENSE) para obter mais detalhes.
 
 ## Contato
 
-Para perguntas, sugestões ou colaborações, fique a vontade para incluir uma issue ou pull request.
+Se tiver dúvidas ou sugestões, ou se estiver interessado em colaborar, abra uma issue ou envie um pull request. Sua participação é muito apreciada!
