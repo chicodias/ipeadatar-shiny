@@ -1,0 +1,47 @@
+# Explorador
+
+
+A aba Explorador é projetada para oferecer aos usuários um panorama completo das séries temporais disponíveis no pacote IpeaDataR. O principal objetivo é facilitar a visualização e seleção das séries que os usuários desejam analisar. Através de uma interface intuitiva, é possível aplicar filtros e buscar séries específicas com base em diversos critérios.
+
+![Explorador](img/01-explorador.png)
+    
+## Funcionalidades
+
+### Total de Séries Disponíveis
+
+No topo da página, os usuários podem visualizar o número total de séries disponíveis, o que oferece uma perspectiva da vasta quantidade de dados acessíveis para análise.
+
+### Filtros
+
+Os usuários podem refinar a lista de séries disponíveis utilizando os seguintes filtros:
+
+- **Frequência**: Permite filtrar as séries por sua periodicidade, como diária, mensal ou anual.
+- **Tema**: Oferece a opção de selecionar séries baseadas em categorias temáticas, tais como macroeconômico, regional ou social.
+- **Fonte**: Com mais de 200 fontes de dados diferentes, os usuários podem escolher séries de uma fonte específica.
+- **Status**: Distingue entre séries ativas e inativas.
+
+### Tabela de Séries
+
+A tabela exibe as séries de acordo com os filtros aplicados e inclui informações detalhadas como:
+
+- **Código**: Identificador único da série.
+- **Nome**: Nome descritivo da série.
+- **Tema**: Categoria temática da série.
+- **Fonte**: Origem dos dados da série.
+- **Frequência**: Periodicidade com a qual os dados são atualizados.
+- **Última atualização**: Data da última atualização da série.
+- **Status**: Indica se a série está ativa ou inativa.
+
+### Barra de Busca
+
+No topo da tabela, há uma barra de busca que permite aos usuários pesquisar rapidamente uma série específica pelo seu nome ou código.
+
+### Seleção de Séries
+
+Os usuários podem selecionar uma série diretamente na tabela ou através do menu à direita. Após a seleção, o usuário é automaticamente redirecionado para a próxima seção, "Modelagem", onde pode continuar a análise da série escolhida.
+
+## Navegação
+
+É possível retornar a qualquer momento e escolher uma série diferente para a análise.
+
+

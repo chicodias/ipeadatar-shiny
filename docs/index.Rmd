@@ -1,0 +1,43 @@
+--- 
+title: "Análise e Previsão de Séries Temporais com Dados do IPEA"
+author: "Francisco Miranda"
+date: "`r Sys.Date()`"
+site: bookdown::bookdown_site
+output: bookdown::gitbook
+documentclass: book
+bibliography: [book.bib, packages.bib]
+biblio-style: apalike
+link-citations: yes
+github-repo: chicodias/ipeadatar-shiny
+description: "Este documento serve como um guia completo para a aplicação web desenvolvida para a exploração interativa, modelagem e previsão de séries temporais utilizando dados do Instituto de Pesquisa Econômica Aplicada (IPEA). Destinado a analistas, pesquisadores e entusiastas de dados, este material detalha as funcionalidades da aplicação, metodologias de modelagem e práticas recomendadas para diagnóstico e previsão de séries temporais."
+---
+
+# Introdução 
+
+## Sobre o Projeto
+
+O `ipeadatar-shiny` é uma plataforma interativa para análise e visualização de séries temporais socioeconômicas. Este projeto foi criado na disciplina SME0808 - Séries Temporais e Aprendizado Dinâmico no segundo semestre de 2023 e é fortemente baseado nos conceitos e técnicas apresentados no livro "Forecasting: Principles and Practice" (fpp3), um recurso abrangente sobre modelagem e previsão de séries temporais em linguagem R.
+
+### Estrutura da documentação
+
+A documentação está organizada em várias seções, cada uma dedicada a um aspecto específico da nossa plataforma web:
+
+- **Explorador**: Um guia para explorar algumas das séries fornecidas pelo pacote [ipeadatar](https://github.com/gomesleduardo/ipeadatar).
+- **Modelagem**: Página interativa com técnicas de decomposição e pré processamento de séries temporais.
+- **Diagnóstico**: Análises de resíduos e testes de hipótese para avaliar modelos preditivos de séries temporais.
+- **Previsão**: Previsões realizadas pelo modelo ajustado.
+
+Cada página oferece uma combinação de teoria, exemplos práticos e orientações para utilizar efetivamente essas ferramentas na nossa plataforma.
+
+## Contribuições
+
+Contribuições para o projeto são sempre bem-vindas! Se você deseja contribuir com código, documentação, relatórios de bugs ou sugestões, por favor, veja nossa página de [Contribuições](https://github.com/chicodias/ipeadatar-shiny/CONTRIBUTING.md).
+
+## Licença
+
+Este projeto está sob a licença MIT. Para mais detalhes, veja o arquivo [LICENSE](https://github.com/chicodias/ipeadatar-shiny/LICENSE.md).
+
+## Contato
+
+Para mais informações, dúvidas ou feedback, não hesite em nos contatar através das [Issues](https://github.com/chicodias/ipeadatar-shiny/issues) do GitHub.
+

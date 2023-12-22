@@ -164,5 +164,21 @@ ui <- fluidPage(
     tabPanel("Modelagem", value = "mod", sidebarLayout(modelagemSidebar(), modelagemMainPanel())),
     tabPanel("Diagnóstico", value="diag", sidebarLayout(diagnosticoSidebar(), diagnosticoMainPanel())),
     tabPanel("Previsão", value = "pre", sidebarLayout(previsaoSidebar(), previsaoMainPanel())),
+    tabPanel("Sobre",
+             mainPanel(
+               h3("Sobre a Plataforma"),
+               p("Esta plataforma interativa foi desenvolvida para explorar, analisar e realizar previsões com séries temporais utilizando os dados do Ipeadata."),
+               p("Para mais informações sobre como utilizar a plataforma, por favor, consulte a documentação completa:"),
+               p(a(href = "https://chicodias.github.io/ipeadatar-shiny-docs",
+                   target = "_blank",
+                   "https://chicodias.github.io/ipeadatar-shiny-docs")),
+               br(),
+               h3("Colaboração"),
+               p("Contribuições para o projeto são sempre bem-vindas. Se você tem interesse em colaborar, seja através de melhorias no código, sugestões ou reporte de problemas, sinta-se à vontade para abrir uma issue ou enviar um pull request no nosso repositório do GitHub."),
+               p(a(href = "https://github.com/chicodias/ipeadatar-shiny",
+                   target = "_blank",
+                   "Repositório GitHub - ipeadatar-shiny"))
+             )
+             )
   )
 )

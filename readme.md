@@ -1,20 +1,20 @@
 # Exploração Interativa de Séries Temporais do Ipeadata
 
-Este repositório é o lar de uma plataforma interativa projetada para a exploração, análise e modelagem preditiva de séries temporais, utilizando os ricos conjuntos de dados disponibilizados pelo Ipeadata. A plataforma, construída com R e Shiny, permite aos usuários realizar análises estatísticas aprofundadas e previsões avançadas com interfaces intuitivas e visualizações dinâmicas.
+Este repositório é o lar de uma plataforma interativa projetada para a exploração, análise e modelagem preditiva de séries temporais, utilizando os conjuntos de dados disponibilizados pelo Ipeadata. A plataforma, construída com R e Shiny, permite aos usuários realizar análises estatísticas e previsões com interfaces intuitivas e visualizações dinâmicas.
 
 ![Exemplo da aplicação](example.jpeg)
 
 ## Funcionalidades
 
 - **Seleção e Visualização de Séries Temporais:** Escolha entre uma variedade de séries disponíveis no Ipeadata e visualize tendências e padrões ao longo do tempo.
-- **Modelagem Preditiva Avançada:** Implemente modelos ARIMA, SARIMA e NNAR para previsões confiáveis e precisas.
+- **Modelagem Preditiva Avançada:** Implemente modelos ARIMA, SARIMA e NNAR para previsão de séries socioeconômicas.
 - **Diagnóstico de Modelos:** Avalie a adequação dos modelos com ferramentas de diagnóstico integradas.
-- **Interatividade Aprimorada:** Interaja com gráficos avançados e dinâmicos usando a biblioteca Plotly.
-- **Documentação Extensa:** Acesse uma documentação detalhada para maximizar o uso da plataforma.
+- **Interatividade Aprimorada:** Interaja com gráficos interativos usando a biblioteca Plotly.
+- **Documentação Extensa:** Acesse a documentação para maximizar o uso da plataforma.
 
 ## Documentação
 
-Uma documentação completa e detalhada está disponível em [Ipeadatar-shiny-docs](https://chicodias.github.io/ipeadatar-shiny-docs), providenciando instruções claras e exemplos práticos para usuários de todos os níveis de habilidade.
+A documentação completa está disponível em [Ipeadatar-shiny-docs](https://chicodias.github.io/ipeadatar-shiny-docs), providenciando instruções e exemplos práticos para utilização do painel interativo.
 
 ## Demonstração Online
 
@@ -29,11 +29,11 @@ Para executar localmente:
 
 ## Análises Estratégicas
 
-Realizamos análises aprofundadas em conjuntos de dados selecionados, que estão documentadas em notebooks R e Python na pasta `/analises/`. Estas análises abordam questões significativas e oferecem insights valiosos.
+Realizamos algumas análises em conjuntos de dados selecionados, que estão documentadas em notebooks R e Python na pasta `/analises/`. 
 
 # Contribuições
 
-Contribuições são muito bem-vindas! Se desejar melhorar nossa plataforma ou análises, não hesite em abrir uma issue ou enviar um pull request.
+Contribuições são muito bem-vindas! Se desejar contribuir com nossa plataforma ou análises, não hesite em abrir uma issue ou enviar um pull request.
 
 ## Licença
 
